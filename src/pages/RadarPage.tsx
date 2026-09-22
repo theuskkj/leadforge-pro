@@ -188,10 +188,7 @@ export function RadarPage() {
     ].filter(Boolean)
   }
 
-  const visibleResults = useMemo(
-    () => results.filter((item) => !getExistingLead(item)),
-    [results, leads, leadsIndex],
-  )
+  const visibleResults = results.filter((item) => !getExistingLead(item))
 
   function toLead(item: LeadSearchResult): Lead {
     const existing = getExistingLead(item)
