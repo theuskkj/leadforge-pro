@@ -37,7 +37,7 @@ const FIELD_MASK = [
   'places.rating',
   'places.userRatingCount',
   'places.primaryTypeDisplayName',
-  'places.googleMapsLinks.placeUri',
+  'places.googleMapsLinks',
   'places.location',
   'nextPageToken',
 ].join(',')
