@@ -50,6 +50,7 @@ type PersistedRadarState = {
   results?: LeadSearchResult[]
   showFilters?: boolean
   searched?: boolean
+  lastSearchSignature?: string
 }
 
 function loadRadarState(defaultLimit: number) {
@@ -69,6 +70,7 @@ function loadRadarState(defaultLimit: number) {
         results: [] as LeadSearchResult[],
         showFilters: false,
         searched: false,
+        lastSearchSignature: '',
       }
     }
 
@@ -87,6 +89,7 @@ function loadRadarState(defaultLimit: number) {
       results: Array.isArray(parsed.results) ? parsed.results : [],
       showFilters: Boolean(parsed.showFilters),
       searched: Boolean(parsed.searched),
+      lastSearchSignature: typeof parsed.lastSearchSignature === 'string' ? parsed.lastSearchSignature : '',
     }
   } catch {
     return {
@@ -94,6 +97,7 @@ function loadRadarState(defaultLimit: number) {
       results: [] as LeadSearchResult[],
       showFilters: false,
       searched: false,
+      lastSearchSignature: '',
     }
   }
 }
@@ -116,6 +120,19 @@ export function RadarPage() {
   const [results, setResults] = useState<LeadSearchResult[]>(initialRadarState.results)
   const [showFilters, setShowFilters] = useState(initialRadarState.showFilters)
   const [searched, setSearched] = useState(initialRadarState.searched)
+  const [lastSearchSignature, setLastSearchSignature] = useState(initialRadarState.lastSearchSignature)
+
+  const currentSearchSignature = useMemo(() => JSON.stringify([
+    params.country.trim().toLowerCase(),
+    params.location.trim().toLowerCase(),
+    params.niche.trim().toLowerCase(),
+    Math.min(20, Math.max(1, params.limit)),
+    Boolean(params.onlyNoWebsite),
+    params.minRating ?? null,
+    Boolean(params.onlyWithPhone),
+  ]), [params])
+
+  const canContinueSearch = searched && results.length > 0 && lastSearchSignature === currentSearchSignature
 
   useEffect(() => {
     const persisted: PersistedRadarState = {
@@ -123,10 +140,11 @@ export function RadarPage() {
       results,
       showFilters,
       searched,
+      lastSearchSignature,
     }
 
     localStorage.setItem(RADAR_STATE_KEY, JSON.stringify(persisted))
-  }, [params, results, showFilters, searched])
+  }, [params, results, showFilters, searched, lastSearchSignature])
 
   const leadsIndex = useMemo(() => {
     return new Map(
@@ -178,12 +196,38 @@ export function RadarPage() {
       return
     }
 
+    const continuing = canContinueSearch
+    const round = continuing ? (params.searchRound ?? 0) : 0
+
     setLoading(true)
     setSearched(true)
     try {
-      const response = await searchLeads({ ...params, limit: Math.min(20, Math.max(1, params.limit)) }, settings)
-      setResults(response.results)
+      const response = await searchLeads({
+        ...params,
+        limit: Math.min(20, Math.max(1, params.limit)),
+        searchRound: round,
+      }, settings)
+
+      if (continuing) {
+        setResults((current) => {
+          const seen = new Set<string>()
+          const merged = [...current, ...response.results].filter((item) => {
+            const key = item.id || `${item.name.trim().toLowerCase()}::${item.address.trim().toLowerCase()}`
+            if (seen.has(key)) return false
+            seen.add(key)
+            return true
+          })
+          return merged.slice(0, 250)
+        })
+      } else {
+        setResults(response.results)
+      }
+
+      setParams((current) => ({ ...current, searchRound: round + 1 }))
+      setLastSearchSignature(currentSearchSignature)
+
       if (response.error) toast.error(response.error)
+      else if (continuing && response.results.length === 0) toast.info('Nenhuma empresa nova encontrada neste lote. Tente novamente para explorar outra região.')
     } finally {
       setLoading(false)
     }
@@ -251,7 +295,7 @@ export function RadarPage() {
             </Button>
             <Button onClick={onSearch} disabled={loading} className="h-11 px-5">
               {loading ? <LoaderCircle className="size-4 animate-spin" /> : <Search className="size-4" />}
-              {loading ? 'Buscando empresas...' : 'Buscar empresas'}
+              {loading ? 'Buscando empresas...' : canContinueSearch ? 'Buscar mais empresas' : 'Buscar empresas'}
             </Button>
           </div>
         </div>
