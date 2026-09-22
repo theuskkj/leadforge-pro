@@ -18,7 +18,7 @@ import {
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { PageHeader } from '../components/PageHeader'
-import { PriorityBadge, WebsiteBadge } from '../components/Badges'
+import { WebsiteBadge } from '../components/Badges'
 import { Button } from '../components/ui/button'
 import { Card } from '../components/ui/card'
 import { Checkbox } from '../components/ui/checkbox'
