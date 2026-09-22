@@ -21,6 +21,9 @@ export interface LeadSearchResult {
   reviewCount: number
   hasWebsite: boolean
   priority: number
+  googleMapsUrl?: string
+  lat?: number
+  lng?: number
 }
 
 export interface Lead {
@@ -50,8 +53,6 @@ export interface WorkspaceSettings {
   currency: 'BRL'
   defaultPotentialValue: number
   defaultResultLimit: number
-  searchProvider: 'mock' | 'endpoint'
-  endpointUrl: string
   compactMode: boolean
 }
 
@@ -63,4 +64,10 @@ export interface SearchParams {
   onlyNoWebsite: boolean
   minRating?: number
   onlyWithPhone?: boolean
+}
+
+export interface SearchResponse {
+  results: LeadSearchResult[]
+  source: 'scraper'
+  error?: string
 }

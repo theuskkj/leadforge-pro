@@ -1,0 +1,11 @@
+{
+  "rewrites": [
+    { "source": "/dashboard", "destination": "/index.html" },
+    { "source": "/radar", "destination": "/index.html" },
+    { "source": "/leads", "destination": "/index.html" },
+    { "source": "/pipeline", "destination": "/index.html" },
+    { "source": "/prompt-generator", "destination": "/index.html" },
+    { "source": "/settings", "destination": "/index.html" },
+    { "source": "/lead/:id", "destination": "/index.html" }
+  ]
+}

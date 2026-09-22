@@ -1,19 +1,47 @@
-import { demoLeads } from '../data/demoLeads'
 import { uid } from '../lib/utils'
 import type { Activity, Lead, LeadStage } from '../types'
 
 const LEADS_KEY = 'leadforge:leads'
+const DATA_MIGRATION_KEY = 'leadforge:real-data-only:v1'
+
+const legacyDemoNames = new Set([
+  'NovaDrive Veículos',
+  'Studio Linha Arquitetura',
+  'Clínica Vitta',
+  'Cantina Bella Serra',
+  'Atlas Fitness',
+  'Horizonte Imóveis',
+])
+
+function isLegacyDemoLead(lead: Lead) {
+  return lead.id.startsWith('mock-') || legacyDemoNames.has(lead.name)
+}
 
 export function loadLeads() {
   try {
     const raw = localStorage.getItem(LEADS_KEY)
     if (!raw) {
-      localStorage.setItem(LEADS_KEY, JSON.stringify(demoLeads))
-      return demoLeads
+      localStorage.setItem(DATA_MIGRATION_KEY, '1')
+      return []
     }
-    return JSON.parse(raw) as Lead[]
+
+    const parsed = JSON.parse(raw) as Lead[]
+    const cleaned = parsed.filter((lead) => !isLegacyDemoLead(lead))
+
+    if (!localStorage.getItem(DATA_MIGRATION_KEY)) {
+      const migrated = cleaned.map((lead) => ({ ...lead, potentialValue: 0 }))
+      localStorage.setItem(LEADS_KEY, JSON.stringify(migrated))
+      localStorage.setItem(DATA_MIGRATION_KEY, '1')
+      return migrated
+    }
+
+    if (cleaned.length !== parsed.length) {
+      localStorage.setItem(LEADS_KEY, JSON.stringify(cleaned))
+    }
+
+    return cleaned
   } catch {
-    return demoLeads
+    return []
   }
 }
 
@@ -68,7 +96,7 @@ export function moveStage(leads: Lead[], leadId: string, stage: LeadStage, close
     return {
       ...lead,
       stage,
-      potentialValue: stage === 'fechado' && closedValue ? closedValue : lead.potentialValue,
+      potentialValue: stage === 'fechado' && closedValue !== undefined ? closedValue : lead.potentialValue,
       updatedAt: now,
       activities: [
         ...lead.activities,
@@ -101,7 +129,7 @@ export function savePrompt(leads: Lead[], leadId: string, prompt: string) {
   return next
 }
 
-export function resetDemoLeads() {
-  persist(demoLeads)
-  return demoLeads
+export function clearLeads() {
+  persist([])
+  return []
 }

@@ -10,8 +10,9 @@ describe('utils centrais', () => {
   })
 
   it('deve gerar URL válida do Google Maps', () => {
-    const url = mapsUrl('Clínica Vitta', 'Rua Vergueiro, 900 - São Paulo')
+    const url = mapsUrl('Clínica Vitta', 'Rua Vergueiro, 900 - São Paulo', 'ChIJ123')
     expect(url).toContain('https://www.google.com/maps/search/?api=1&query=')
+    expect(url).toContain('query_place_id=ChIJ123')
     expect(url).toContain('Cl%C3%ADnica%20Vitta')
   })
 

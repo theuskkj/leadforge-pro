@@ -1,11 +1,11 @@
 import { createContext, useContext, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import {
+  clearLeads,
   deleteLead,
   duplicateLead,
   loadLeads,
   moveStage,
-  resetDemoLeads,
   saveLead,
   savePrompt,
   updateLead,
@@ -66,8 +66,8 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
         toast.success('Prompt salvo no lead')
       },
       resetLeads: () => {
-        setLeads(resetDemoLeads())
-        toast.success('Dados demo restaurados')
+        setLeads(clearLeads())
+        toast.success('Base de leads limpa')
       },
     }
   }, [leads, settingsState])
