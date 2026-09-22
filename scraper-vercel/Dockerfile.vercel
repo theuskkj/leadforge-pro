@@ -1,0 +1,13 @@
+FROM golang:1.27-alpine AS wrapper-builder
+WORKDIR /src
+COPY main.go .
+RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /scraper-api main.go
+
+FROM gosom/google-maps-scraper:latest
+COPY --from=wrapper-builder /scraper-api /usr/local/bin/scraper-api
+
+ENV DISABLE_TELEMETRY=1
+ENV SCRAPER_TIMEOUT_SECONDS=165
+
+ENTRYPOINT []
+CMD ["scraper-api"]
