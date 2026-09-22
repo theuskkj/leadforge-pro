@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   Building2,
   Check,
@@ -42,6 +42,62 @@ const nicheSuggestions = [
   'concessionárias',
 ]
 
+
+const RADAR_STATE_KEY = 'leadforge:radar-state:v1'
+
+type PersistedRadarState = {
+  params?: Partial<SearchParams>
+  results?: LeadSearchResult[]
+  showFilters?: boolean
+  searched?: boolean
+}
+
+function loadRadarState(defaultLimit: number) {
+  const fallbackParams: SearchParams = {
+    country: 'Brasil',
+    location: 'São Paulo - SP',
+    niche: 'dentistas',
+    limit: Math.min(defaultLimit, 20),
+    onlyNoWebsite: false,
+  }
+
+  try {
+    const raw = localStorage.getItem(RADAR_STATE_KEY)
+    if (!raw) {
+      return {
+        params: fallbackParams,
+        results: [] as LeadSearchResult[],
+        showFilters: false,
+        searched: false,
+      }
+    }
+
+    const parsed = JSON.parse(raw) as PersistedRadarState
+    const savedParams = parsed.params ?? {}
+
+    return {
+      params: {
+        ...fallbackParams,
+        ...savedParams,
+        limit: Math.min(20, Math.max(1, Number(savedParams.limit ?? fallbackParams.limit))),
+        onlyNoWebsite: Boolean(savedParams.onlyNoWebsite),
+        onlyWithPhone: Boolean(savedParams.onlyWithPhone),
+        ...(typeof savedParams.minRating === 'number' ? { minRating: savedParams.minRating } : {}),
+      } satisfies SearchParams,
+      results: Array.isArray(parsed.results) ? parsed.results : [],
+      showFilters: Boolean(parsed.showFilters),
+      searched: Boolean(parsed.searched),
+    }
+  } catch {
+    return {
+      params: fallbackParams,
+      results: [] as LeadSearchResult[],
+      showFilters: false,
+      searched: false,
+    }
+  }
+}
+
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block">
@@ -54,17 +110,23 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 export function RadarPage() {
   const { leads, addLead, settings } = useAppData()
   const navigate = useNavigate()
-  const [params, setParams] = useState<SearchParams>({
-    country: 'Brasil',
-    location: 'São Paulo - SP',
-    niche: 'dentistas',
-    limit: Math.min(settings.defaultResultLimit, 20),
-    onlyNoWebsite: false,
-  })
+  const [initialRadarState] = useState(() => loadRadarState(settings.defaultResultLimit))
+  const [params, setParams] = useState<SearchParams>(initialRadarState.params)
   const [loading, setLoading] = useState(false)
-  const [results, setResults] = useState<LeadSearchResult[]>([])
-  const [showFilters, setShowFilters] = useState(false)
-  const [searched, setSearched] = useState(false)
+  const [results, setResults] = useState<LeadSearchResult[]>(initialRadarState.results)
+  const [showFilters, setShowFilters] = useState(initialRadarState.showFilters)
+  const [searched, setSearched] = useState(initialRadarState.searched)
+
+  useEffect(() => {
+    const persisted: PersistedRadarState = {
+      params,
+      results,
+      showFilters,
+      searched,
+    }
+
+    localStorage.setItem(RADAR_STATE_KEY, JSON.stringify(persisted))
+  }, [params, results, showFilters, searched])
 
   const leadsIndex = useMemo(() => {
     return new Map(
