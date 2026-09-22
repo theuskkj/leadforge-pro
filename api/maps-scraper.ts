@@ -1,3 +1,5 @@
+import process from 'node:process'
+
 type ApiRequest = {
   method?: string
   body?: unknown
