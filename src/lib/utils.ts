@@ -11,11 +11,19 @@ export function computePriority(input: {
   reviewCount: number
   hasPhone: boolean
 }) {
-  const websiteScore = input.hasWebsite ? 10 : 40
-  const ratingScore = Math.min(25, Math.max(0, (input.rating / 5) * 25))
-  const reviewScore = Math.min(25, Math.log10(Math.max(1, input.reviewCount + 1)) * 12)
-  const phoneScore = input.hasPhone ? 10 : 0
-  return Math.max(0, Math.min(100, Math.round(websiteScore + ratingScore + reviewScore + phoneScore)))
+  let score = input.hasWebsite ? 5 : 45
+
+  if (input.hasPhone) score += 15
+  if (input.rating >= 4.5) score += 15
+  else if (input.rating >= 4) score += 10
+  else if (input.rating >= 3.5) score += 5
+
+  if (input.reviewCount >= 300) score += 20
+  else if (input.reviewCount >= 100) score += 15
+  else if (input.reviewCount >= 30) score += 10
+  else if (input.reviewCount >= 5) score += 5
+
+  return Math.max(0, Math.min(100, Math.round(score)))
 }
 
 export function mapsUrl(name: string, address: string) {
@@ -29,6 +37,19 @@ export function formatCurrency(value: number) {
 export function formatDate(value?: string) {
   if (!value) return '—'
   return new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(value))
+}
+
+export function formatNumber(value: number) {
+  return new Intl.NumberFormat('pt-BR').format(value)
+}
+
+export function initials(name: string) {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join('')
 }
 
 export function uid() {
