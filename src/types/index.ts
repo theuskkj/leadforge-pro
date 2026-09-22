@@ -65,6 +65,7 @@ export interface SearchParams {
   minRating?: number
   onlyWithPhone?: boolean
   searchRound?: number
+  excludeKeys?: string[]
 }
 
 export interface SearchResponse {
