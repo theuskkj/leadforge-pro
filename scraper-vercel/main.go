@@ -192,19 +192,14 @@ func search(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), time.Duration(timeoutSeconds)*time.Second)
 	defer cancel()
 
-	depth := "1"
-	if req.Limit > 10 {
-		depth = "2"
-	}
-
 	args := []string{
 		"-input", inputPath,
 		"-results", outputPath,
 		"-json",
-		"-depth", depth,
+		"-depth", "1",
 		"-c", "1",
 		"-lang", "pt",
-		"-exit-on-inactivity", "60s",
+		"-exit-on-inactivity", "30s",
 	}
 
 	cmd := exec.CommandContext(ctx, "google-maps-scraper", args...)
