@@ -26,8 +26,10 @@ export function computePriority(input: {
   return Math.max(0, Math.min(100, Math.round(score)))
 }
 
-export function mapsUrl(name: string, address: string) {
-  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${name} ${address}`)}`
+export function mapsUrl(name: string, address: string, placeId?: string) {
+  const query = encodeURIComponent(`${name}, ${address}`)
+  const base = `https://www.google.com/maps/search/?api=1&query=${query}`
+  return placeId ? `${base}&query_place_id=${encodeURIComponent(placeId)}` : base
 }
 
 export function formatCurrency(value: number) {
