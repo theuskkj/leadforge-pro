@@ -18,11 +18,16 @@ import (
 )
 
 type SearchRequest struct {
-	Country  string  `json:"country"`
-	Location string  `json:"location"`
-	Niche    string  `json:"niche"`
-	Limit    int     `json:"limit"`
+	Country   string  `json:"country"`
+	Location  string  `json:"location"`
+	Niche     string  `json:"niche"`
+	Limit     int     `json:"limit"`
 	MinRating float64 `json:"minRating,omitempty"`
+}
+
+type SearchVariant struct {
+	ID    string
+	Query string
 }
 
 type Entry struct {
@@ -91,6 +96,137 @@ func clean(s string, max int) string {
 		s = s[:max]
 	}
 	return s
+}
+
+
+func buildSearchVariants(req SearchRequest) []SearchVariant {
+	base := fmt.Sprintf("%s em %s, %s", req.Niche, req.Location, req.Country)
+
+	var labels []struct {
+		id     string
+		prefix string
+	}
+
+	country := strings.ToLower(strings.TrimSpace(req.Country))
+	if country == "brasil" || country == "brazil" || country == "" {
+		labels = []struct {
+			id     string
+			prefix string
+		}{
+			{id: "base", prefix: ""},
+			{id: "centro", prefix: "centro de "},
+			{id: "norte", prefix: "zona norte de "},
+			{id: "sul", prefix: "zona sul de "},
+			{id: "leste", prefix: "zona leste de "},
+			{id: "oeste", prefix: "zona oeste de "},
+		}
+	} else {
+		labels = []struct {
+			id     string
+			prefix string
+		}{
+			{id: "base", prefix: ""},
+			{id: "center", prefix: "city center of "},
+			{id: "north", prefix: "north of "},
+			{id: "south", prefix: "south of "},
+			{id: "east", prefix: "east of "},
+			{id: "west", prefix: "west of "},
+		}
+	}
+
+	count := 2
+	if req.Limit > 5 {
+		count = 4
+	}
+	if req.Limit > 10 {
+		count = len(labels)
+	}
+
+	variants := make([]SearchVariant, 0, count)
+	for i := 0; i < count; i++ {
+		item := labels[i]
+		query := base
+		if item.prefix != "" {
+			query = fmt.Sprintf("%s em %s%s, %s", req.Niche, item.prefix, req.Location, req.Country)
+		}
+		variants = append(variants, SearchVariant{ID: item.id, Query: query})
+	}
+
+	return variants
+}
+
+func entryIdentity(e Entry) string {
+	if value := firstNonEmpty(e.PlaceID, e.DataID, e.CID); value != "" {
+		return strings.ToLower(value)
+	}
+
+	return strings.ToLower(strings.TrimSpace(e.Title) + "::" + strings.TrimSpace(e.Address))
+}
+
+func distributeEntries(entries []Entry, variants []SearchVariant, limit int, minRating float64) []Entry {
+	buckets := make(map[string][]Entry, len(variants))
+	fallback := make([]Entry, 0)
+	seen := make(map[string]struct{}, len(entries))
+
+	for _, entry := range entries {
+		if entry.Title == "" {
+			continue
+		}
+		if minRating > 0 && entry.ReviewRating < minRating {
+			continue
+		}
+
+		key := entryIdentity(entry)
+		if key == "" {
+			continue
+		}
+		if _, exists := seen[key]; exists {
+			continue
+		}
+		seen[key] = struct{}{}
+
+		if entry.InputID != "" {
+			buckets[entry.InputID] = append(buckets[entry.InputID], entry)
+		} else {
+			fallback = append(fallback, entry)
+		}
+	}
+
+	selected := make([]Entry, 0, limit)
+	positions := make(map[string]int, len(variants))
+
+	for len(selected) < limit {
+		added := false
+
+		for _, variant := range variants {
+			bucket := buckets[variant.ID]
+			position := positions[variant.ID]
+			if position >= len(bucket) {
+				continue
+			}
+
+			selected = append(selected, bucket[position])
+			positions[variant.ID] = position + 1
+			added = true
+
+			if len(selected) >= limit {
+				break
+			}
+		}
+
+		if !added {
+			break
+		}
+	}
+
+	for _, entry := range fallback {
+		if len(selected) >= limit {
+			break
+		}
+		selected = append(selected, entry)
+	}
+
+	return selected
 }
 
 func parseEntries(path string) ([]Entry, error) {
@@ -174,11 +310,16 @@ func search(w http.ResponseWriter, r *http.Request) {
 	}
 	defer os.RemoveAll(workDir)
 
-	query := fmt.Sprintf("%s em %s, %s", req.Niche, req.Location, req.Country)
+	variants := buildSearchVariants(req)
 	inputPath := filepath.Join(workDir, "queries.txt")
 	outputPath := filepath.Join(workDir, "results.json")
 
-	if err := os.WriteFile(inputPath, []byte(query+"\n"), 0600); err != nil {
+	queryLines := make([]string, 0, len(variants))
+	for _, variant := range variants {
+		queryLines = append(queryLines, fmt.Sprintf("%s #!# %s", variant.Query, variant.ID))
+	}
+
+	if err := os.WriteFile(inputPath, []byte(strings.Join(queryLines, "\n")+"\n"), 0600); err != nil {
 		jsonResponse(w, http.StatusInternalServerError, map[string]string{"error": "Falha ao preparar consulta"})
 		return
 	}
@@ -197,7 +338,9 @@ func search(w http.ResponseWriter, r *http.Request) {
 		"-results", outputPath,
 		"-json",
 		"-depth", "1",
-		"-c", "1",
+		"-c", "2",
+		"-browser-pool-size", "1",
+		"-pages-per-browser", "2",
 		"-lang", "pt",
 		"-exit-on-inactivity", "30s",
 	}
@@ -224,14 +367,10 @@ func search(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	results := make([]Result, 0, req.Limit)
-	for _, e := range entries {
-		if e.Title == "" {
-			continue
-		}
-		if req.MinRating > 0 && e.ReviewRating < req.MinRating {
-			continue
-		}
+	selectedEntries := distributeEntries(entries, variants, req.Limit, req.MinRating)
+	results := make([]Result, 0, len(selectedEntries))
+
+	for _, e := range selectedEntries {
 		website := strings.TrimSpace(e.WebSite)
 		if website == "" {
 			website = strings.TrimSpace(e.WebsiteAlt)
@@ -254,15 +393,20 @@ func search(w http.ResponseWriter, r *http.Request) {
 			Lng:           e.Longitude,
 			Emails:        e.Emails,
 		})
-		if len(results) >= req.Limit {
-			break
-		}
+	}
+
+	queryNames := make([]string, 0, len(variants))
+	for _, variant := range variants {
+		queryNames = append(queryNames, variant.Query)
 	}
 
 	jsonResponse(w, http.StatusOK, map[string]any{
-		"source":  "scraper",
-		"query":   query,
-		"results": results,
+		"source":        "scraper",
+		"mode":          "wide",
+		"queries":       queryNames,
+		"regionsQueried": len(variants),
+		"uniqueFound":   len(entries),
+		"results":       results,
 	})
 }
 
