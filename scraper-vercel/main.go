@@ -307,9 +307,9 @@ func search(w http.ResponseWriter, r *http.Request) {
 
 	var req SearchRequest
 	dec := json.NewDecoder(http.MaxBytesReader(w, r.Body, 32*1024))
-	dec.DisallowUnknownFields()
 	if err := dec.Decode(&req); err != nil {
-		jsonResponse(w, http.StatusBadRequest, map[string]string{"error": "JSON inválido"})
+		log.Printf("invalid search payload: %v", err)
+		jsonResponse(w, http.StatusBadRequest, map[string]string{"error": "Não foi possível interpretar os dados da pesquisa"})
 		return
 	}
 
