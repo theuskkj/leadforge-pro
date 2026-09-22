@@ -78,11 +78,6 @@ export function DashboardPage() {
     return { day, leads: count }
   })
 
-  const hasTrend = trendData.some((point) => point.leads > 0)
-  const displayTrend = hasTrend
-    ? trendData
-    : trendData.map((point, index) => ({ ...point, leads: Math.max(0, Math.round((leads.length / 7) * (0.6 + index * 0.12))) }))
-
   return (
     <>
       <PageHeader
@@ -112,12 +107,12 @@ export function DashboardPage() {
               <p className="mt-1 text-xs text-zinc-500">Novas oportunidades nos últimos 7 dias</p>
             </div>
             <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/15 bg-emerald-400/[0.07] px-2.5 py-1 text-[10px] font-medium text-emerald-300">
-              <TrendingUp className="size-3" /> Operação ativa
+              <TrendingUp className="size-3" /> Dados reais
             </span>
           </div>
           <div className="h-[265px]">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={displayTrend} margin={{ left: -20, right: 4 }}>
+              <AreaChart data={trendData} margin={{ left: -20, right: 4 }}>
                 <defs>
                   <linearGradient id="leadArea" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor="#ff2438" stopOpacity={0.26} />
