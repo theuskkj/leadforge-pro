@@ -87,6 +87,7 @@ export async function searchLeads(
         onlyNoWebsite: params.onlyNoWebsite,
         onlyWithPhone: params.onlyWithPhone ?? false,
         searchRound: params.searchRound ?? 0,
+        excludeKeys: params.excludeKeys ?? [],
       }),
     })
 
