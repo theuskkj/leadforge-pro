@@ -7,7 +7,7 @@ FROM gosom/google-maps-scraper:latest
 COPY --from=wrapper-builder /scraper-api /usr/local/bin/scraper-api
 
 ENV DISABLE_TELEMETRY=1
-ENV SCRAPER_TIMEOUT_SECONDS=165
+ENV SCRAPER_TIMEOUT_SECONDS=85
 
 ENTRYPOINT []
 CMD ["scraper-api"]
