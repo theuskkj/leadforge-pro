@@ -48,34 +48,27 @@ describe('normalizeScraperResult', () => {
 })
 
 describe('searchLeads', () => {
-  it('cria job e retorna resultados quando o scraper completa', async () => {
-    const fetchSpy = vi.fn()
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ jobId: 'job-1', status: 'pending' }),
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          jobId: 'job-1',
-          status: 'completed',
-          results: [{
-            id: 'p1',
-            name: 'Clínica Real',
-            address: 'Rua Real, 123',
-            rating: 4.9,
-            reviewCount: 99,
-            phone: '(11) 99999-9999',
-          }],
-        }),
-      })
+  it('retorna resultados reais do serviço de scraping', async () => {
+    const fetchSpy = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        source: 'scraper',
+        results: [{
+          id: 'p1',
+          name: 'Clínica Real',
+          address: 'Rua Real, 123',
+          rating: 4.9,
+          reviewCount: 99,
+          phone: '(11) 99999-9999',
+        }],
+      }),
+    })
 
     vi.stubGlobal('fetch', fetchSpy)
 
     const result = await searchLeads(params, settings)
 
-    expect(fetchSpy).toHaveBeenNthCalledWith(1, '/api/maps-scraper', expect.objectContaining({ method: 'POST' }))
-    expect(fetchSpy).toHaveBeenNthCalledWith(2, '/api/maps-scraper?job_id=job-1')
+    expect(fetchSpy).toHaveBeenCalledWith('/api/maps-scraper', expect.objectContaining({ method: 'POST' }))
     expect(result.source).toBe('scraper')
     expect(result.results[0]?.name).toBe('Clínica Real')
   })
