@@ -145,7 +145,7 @@ export function RadarPage() {
             </div>
             <div>
               <p className="text-[15px] font-semibold text-white">Nova pesquisa</p>
-              <p className="mt-1 text-xs leading-5 text-zinc-500">Busque empresas por nicho e localização usando Google Places.</p>
+              <p className="mt-1 text-xs leading-5 text-zinc-500">Busque empresas por nicho e localização diretamente no Google Maps.</p>
             </div>
           </div>
 
@@ -212,7 +212,7 @@ export function RadarPage() {
             </div>
             <span className="inline-flex w-fit items-center gap-2 rounded-full border border-emerald-400/15 bg-emerald-400/[0.07] px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[.1em] text-emerald-300">
               <Globe2 className="size-3.5" />
-              Google Places
+              Google Maps Scraper
             </span>
           </div>
 
@@ -280,7 +280,7 @@ export function RadarPage() {
       {!searched && !loading ? (
         <div className="mt-4 grid gap-3 sm:grid-cols-3">
           {[
-            { title: 'Pesquise negócios reais', description: 'Google Places localiza empresas por nicho e região.', icon: Globe2 },
+            { title: 'Pesquise negócios reais', description: 'O scraper pesquisa empresas reais no Google Maps por nicho e região.', icon: Globe2 },
             { title: 'Priorize oportunidades', description: 'O score favorece empresas sem site e com boa demanda.', icon: Sparkles },
             { title: 'Leve para o pipeline', description: 'Salve o lead e acompanhe cada etapa comercial.', icon: Building2 },
           ].map((feature) => {
