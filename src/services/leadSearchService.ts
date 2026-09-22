@@ -81,6 +81,7 @@ export async function searchLeads(
         niche: params.niche,
         limit: Math.min(20, Math.max(1, params.limit)),
         minRating: params.minRating,
+        searchRound: params.searchRound ?? 0,
       }),
     })
 

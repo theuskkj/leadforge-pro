@@ -18,11 +18,12 @@ import (
 )
 
 type SearchRequest struct {
-	Country   string  `json:"country"`
-	Location  string  `json:"location"`
-	Niche     string  `json:"niche"`
-	Limit     int     `json:"limit"`
-	MinRating float64 `json:"minRating,omitempty"`
+	Country     string  `json:"country"`
+	Location    string  `json:"location"`
+	Niche       string  `json:"niche"`
+	Limit       int     `json:"limit"`
+	MinRating   float64 `json:"minRating,omitempty"`
+	SearchRound int     `json:"searchRound,omitempty"`
 }
 
 type SearchVariant struct {
@@ -134,17 +135,31 @@ func buildSearchVariants(req SearchRequest) []SearchVariant {
 		}
 	}
 
-	count := 2
-	if req.Limit > 5 {
-		count = 4
+	// Keep each HTTP request small and fast. Repeated searches rotate through
+	// different pairs, so coverage grows without one huge Chromium job.
+	pairs := [][2]int{
+		{0, 1}, // cidade + centro
+		{2, 3}, // norte + sul
+		{4, 5}, // leste + oeste
+		{0, 2}, // cidade + norte
+		{3, 4}, // sul + leste
+		{1, 5}, // centro + oeste
 	}
-	if req.Limit > 10 {
-		count = len(labels)
+
+	round := req.SearchRound
+	if round < 0 {
+		round = 0
+	}
+	pair := pairs[round%len(pairs)]
+
+	count := 2
+	if req.Limit <= 5 {
+		count = 1
 	}
 
 	variants := make([]SearchVariant, 0, count)
 	for i := 0; i < count; i++ {
-		item := labels[i]
+		item := labels[pair[i]]
 		query := base
 		if item.prefix != "" {
 			query = fmt.Sprintf("%s em %s%s, %s", req.Niche, item.prefix, req.Location, req.Country)
@@ -324,9 +339,9 @@ func search(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	timeoutSeconds := 165
+	timeoutSeconds := 85
 	if raw := os.Getenv("SCRAPER_TIMEOUT_SECONDS"); raw != "" {
-		if n, err := strconv.Atoi(raw); err == nil && n >= 30 && n <= 240 {
+		if n, err := strconv.Atoi(raw); err == nil && n >= 30 && n <= 120 {
 			timeoutSeconds = n
 		}
 	}
@@ -342,23 +357,31 @@ func search(w http.ResponseWriter, r *http.Request) {
 		"-browser-pool-size", "1",
 		"-pages-per-browser", "2",
 		"-lang", "pt",
-		"-exit-on-inactivity", "30s",
+		"-exit-on-inactivity", "15s",
 	}
 
 	cmd := exec.CommandContext(ctx, "google-maps-scraper", args...)
 	cmd.Env = append(os.Environ(), "DISABLE_TELEMETRY=1")
-	logOutput, err := cmd.CombinedOutput()
+	logOutput, runErr := cmd.CombinedOutput()
+	partial := false
+
 	if ctx.Err() == context.DeadlineExceeded {
-		jsonResponse(w, http.StatusGatewayTimeout, map[string]string{"error": "A busca demorou mais que o limite do servidor"})
-		return
-	}
-	if err != nil {
-		log.Printf("scraper failed: %v: %s", err, strings.TrimSpace(string(logOutput)))
-		jsonResponse(w, http.StatusBadGateway, map[string]string{"error": "O scraper não conseguiu concluir a pesquisa"})
-		return
+		partial = true
+		log.Printf("scraper reached soft timeout; trying partial results")
+	} else if runErr != nil {
+		log.Printf("scraper failed: %v: %s", runErr, strings.TrimSpace(string(logOutput)))
+		partial = true
 	}
 
 	entries, err := parseEntries(outputPath)
+	if partial && len(entries) == 0 {
+		if ctx.Err() == context.DeadlineExceeded {
+			jsonResponse(w, http.StatusGatewayTimeout, map[string]string{"error": "A busca demorou mais que o limite do servidor"})
+			return
+		}
+		jsonResponse(w, http.StatusBadGateway, map[string]string{"error": "O scraper não conseguiu concluir a pesquisa"})
+		return
+	}
 	if err != nil && !errors.Is(err, os.ErrNotExist) {
 		log.Printf("parse failed: %v", err)
 	}
@@ -405,8 +428,10 @@ func search(w http.ResponseWriter, r *http.Request) {
 		"mode":          "wide",
 		"queries":       queryNames,
 		"regionsQueried": len(variants),
-		"uniqueFound":   len(entries),
-		"results":       results,
+		"searchRound":    req.SearchRound,
+		"uniqueFound":    len(entries),
+		"partial":        partial,
+		"results":        results,
 	})
 }
 
