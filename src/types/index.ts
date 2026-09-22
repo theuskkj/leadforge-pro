@@ -68,6 +68,6 @@ export interface SearchParams {
 
 export interface SearchResponse {
   results: LeadSearchResult[]
-  source: 'google'
+  source: 'scraper'
   error?: string
 }
