@@ -64,6 +64,7 @@ export interface SearchParams {
   onlyNoWebsite: boolean
   minRating?: number
   onlyWithPhone?: boolean
+  searchRound?: number
 }
 
 export interface SearchResponse {
