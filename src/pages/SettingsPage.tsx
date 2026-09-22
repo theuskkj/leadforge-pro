@@ -63,7 +63,7 @@ export function SettingsPage() {
 
           <div className="mt-5 flex flex-wrap gap-2">
             <Button onClick={() => setSettings(draft)}><CheckCircle2 className="size-4" />Salvar configurações</Button>
-            <Button variant="outline" onClick={resetLeads}><RotateCcw className="size-4" />Restaurar dados demo</Button>
+            <Button variant="outline" onClick={() => { if (confirm('Limpar todos os leads salvos?')) resetLeads() }}><RotateCcw className="size-4" />Limpar base de leads</Button>
           </div>
         </Card>
 
@@ -75,25 +75,18 @@ export function SettingsPage() {
               </div>
               <div>
                 <p className="text-[15px] font-semibold text-white">Fonte de dados</p>
-                <p className="mt-1 text-xs leading-5 text-zinc-500">Escolha de onde o Radar deve obter empresas.</p>
+                <p className="mt-1 text-xs leading-5 text-zinc-500">O Radar consulta exclusivamente dados reais do Google Places.</p>
               </div>
-            </div>
-
-            <div className="mt-5">
-              <Select value={draft.searchProvider} onChange={(e) => setDraft((value) => ({ ...value, searchProvider: e.target.value as 'google' | 'mock' }))}>
-                <option value="google">Google Places · recomendado</option>
-                <option value="mock">Demonstração</option>
-              </Select>
             </div>
 
             <div className="mt-4 flex items-center justify-between rounded-2xl border border-white/[0.06] bg-[#0d0e11] p-3.5">
               <div>
                 <p className="text-xs font-medium text-zinc-300">Google Places API</p>
                 <p className="mt-1 text-[11px] text-zinc-600">
-                  {googleReady === null ? 'Verificando...' : googleReady ? 'Configurada no servidor' : 'Chave ainda não configurada'}
+                  {googleReady === null ? 'Verificando...' : googleReady ? 'Configurada no servidor' : 'Não configurada — pesquisas bloqueadas'}
                 </p>
               </div>
-              <span className={`size-2.5 rounded-full ${googleReady ? 'bg-emerald-400 shadow-[0_0_14px_rgba(52,211,153,.45)]' : 'bg-amber-400'}`} />
+              <span className={`size-2.5 rounded-full ${googleReady ? 'bg-emerald-400 shadow-[0_0_14px_rgba(52,211,153,.45)]' : 'bg-red-400'}`} />
             </div>
           </Card>
 
