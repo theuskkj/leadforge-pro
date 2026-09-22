@@ -1,6 +1,6 @@
 import { buildMockBusinesses } from '../data/mockBusinesses'
 import { computePriority, uid } from '../lib/utils'
-import type { LeadSearchResult, SearchParams } from '../types'
+import type { LeadSearchResult, SearchParams, WorkspaceSettings } from '../types'
 
 function normalizeResult(item: Record<string, unknown>, niche: string, fallbackCity: string): LeadSearchResult {
   const name = String(item.name ?? item.company ?? 'Empresa local')
@@ -33,36 +33,6 @@ function buildMock(params: SearchParams) {
   )
 }
 
-export async function searchLeads(params: SearchParams) {
-  const endpoint = import.meta.env.VITE_LEAD_SEARCH_ENDPOINT as string | undefined
-  const canCallEndpoint = Boolean(endpoint)
-
-  if (canCallEndpoint) {
-    try {
-      const response = await fetch(endpoint!, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          country: params.country,
-          location: params.location,
-          niche: params.niche,
-          limit: params.limit,
-        }),
-      })
-      if (!response.ok) throw new Error('Falha no endpoint')
-      const payload = (await response.json()) as { data?: Record<string, unknown>[] }
-      const list = (payload.data ?? []).map((item) => normalizeResult(item, params.niche, params.location))
-      return { results: applyFilters(list, params), isDemo: false }
-    } catch {
-      const fallback = applyFilters(buildMock(params), params)
-      return { results: fallback, isDemo: true }
-    }
-  }
-
-  const fallback = applyFilters(buildMock(params), params)
-  return { results: fallback, isDemo: true }
-}
-
 function applyFilters(results: LeadSearchResult[], params: SearchParams) {
   return results.filter((item) => {
     if (params.onlyNoWebsite && item.hasWebsite) return false
@@ -70,4 +40,45 @@ function applyFilters(results: LeadSearchResult[], params: SearchParams) {
     if (params.onlyWithPhone && !item.phone) return false
     return true
   })
+}
+
+function getEndpoint(settings: WorkspaceSettings) {
+  const fromSettings = settings.endpointUrl.trim()
+  if (fromSettings) return fromSettings
+  const fromEnv = (import.meta.env.VITE_LEAD_SEARCH_ENDPOINT as string | undefined)?.trim()
+  return fromEnv || ''
+}
+
+export async function searchLeads(
+  params: SearchParams,
+  settings: Pick<WorkspaceSettings, 'searchProvider' | 'endpointUrl'>,
+) {
+  if (settings.searchProvider === 'mock') {
+    return { results: applyFilters(buildMock(params), params), isDemo: true }
+  }
+
+  const endpoint = getEndpoint(settings as WorkspaceSettings)
+  if (!endpoint) {
+    return { results: applyFilters(buildMock(params), params), isDemo: true }
+  }
+
+  try {
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        country: params.country,
+        location: params.location,
+        niche: params.niche,
+        limit: params.limit,
+      }),
+    })
+    if (!response.ok) throw new Error('Falha no endpoint')
+
+    const payload = (await response.json()) as { data?: Record<string, unknown>[] }
+    const list = (payload.data ?? []).map((item) => normalizeResult(item, params.niche, params.location))
+    return { results: applyFilters(list, params), isDemo: false }
+  } catch {
+    return { results: applyFilters(buildMock(params), params), isDemo: true }
+  }
 }
