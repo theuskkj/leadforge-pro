@@ -18,14 +18,15 @@ import (
 )
 
 type SearchRequest struct {
-	Country       string  `json:"country"`
-	Location      string  `json:"location"`
-	Niche         string  `json:"niche"`
-	Limit         int     `json:"limit"`
-	MinRating     float64 `json:"minRating,omitempty"`
-	OnlyNoWebsite bool    `json:"onlyNoWebsite,omitempty"`
-	OnlyWithPhone bool    `json:"onlyWithPhone,omitempty"`
-	SearchRound   int     `json:"searchRound,omitempty"`
+	Country       string   `json:"country"`
+	Location      string   `json:"location"`
+	Niche         string   `json:"niche"`
+	Limit         int      `json:"limit"`
+	MinRating     float64  `json:"minRating,omitempty"`
+	OnlyNoWebsite bool     `json:"onlyNoWebsite,omitempty"`
+	OnlyWithPhone bool     `json:"onlyWithPhone,omitempty"`
+	SearchRound   int      `json:"searchRound,omitempty"`
+	ExcludeKeys   []string `json:"excludeKeys,omitempty"`
 }
 
 type SearchVariant struct {
@@ -184,6 +185,13 @@ func distributeEntries(entries []Entry, variants []SearchVariant, req SearchRequ
 	buckets := make(map[string][]Entry, len(variants))
 	fallback := make([]Entry, 0)
 	seen := make(map[string]struct{}, len(entries))
+	excluded := make(map[string]struct{}, len(req.ExcludeKeys))
+	for _, value := range req.ExcludeKeys {
+		value = strings.ToLower(strings.TrimSpace(value))
+		if value != "" {
+			excluded[value] = struct{}{}
+		}
+	}
 	eligibleCount := 0
 
 	for _, entry := range entries {
@@ -204,6 +212,13 @@ func distributeEntries(entries []Entry, variants []SearchVariant, req SearchRequ
 
 		key := entryIdentity(entry)
 		if key == "" {
+			continue
+		}
+		nameAddressKey := strings.ToLower(strings.TrimSpace(entry.Title) + "::" + strings.TrimSpace(entry.Address))
+		if _, exists := excluded[key]; exists {
+			continue
+		}
+		if _, exists := excluded[nameAddressKey]; exists {
 			continue
 		}
 		if _, exists := seen[key]; exists {
@@ -306,7 +321,7 @@ func search(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req SearchRequest
-	dec := json.NewDecoder(http.MaxBytesReader(w, r.Body, 32*1024))
+	dec := json.NewDecoder(http.MaxBytesReader(w, r.Body, 128*1024))
 	if err := dec.Decode(&req); err != nil {
 		log.Printf("invalid search payload: %v", err)
 		jsonResponse(w, http.StatusBadRequest, map[string]string{"error": "Não foi possível interpretar os dados da pesquisa"})
