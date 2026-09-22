@@ -26,16 +26,20 @@ export function loadLeads() {
     }
 
     const parsed = JSON.parse(raw) as Lead[]
-    const migrated = parsed
-      .filter((lead) => !isLegacyDemoLead(lead))
-      .map((lead) => ({ ...lead, potentialValue: 0 }))
+    const cleaned = parsed.filter((lead) => !isLegacyDemoLead(lead))
 
-    if (!localStorage.getItem(DATA_MIGRATION_KEY) || migrated.length !== parsed.length) {
+    if (!localStorage.getItem(DATA_MIGRATION_KEY)) {
+      const migrated = cleaned.map((lead) => ({ ...lead, potentialValue: 0 }))
       localStorage.setItem(LEADS_KEY, JSON.stringify(migrated))
       localStorage.setItem(DATA_MIGRATION_KEY, '1')
+      return migrated
     }
 
-    return migrated
+    if (cleaned.length !== parsed.length) {
+      localStorage.setItem(LEADS_KEY, JSON.stringify(cleaned))
+    }
+
+    return cleaned
   } catch {
     return []
   }
