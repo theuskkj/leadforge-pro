@@ -21,6 +21,9 @@ type ScraperResponse = {
   source?: 'scraper'
   error?: string
   results?: ScraperResult[]
+  scannedCount?: number
+  matchedCount?: number
+  partial?: boolean
 }
 
 export function normalizeScraperResult(item: ScraperResult, params: Pick<SearchParams, 'niche' | 'location'>): LeadSearchResult {
@@ -81,6 +84,8 @@ export async function searchLeads(
         niche: params.niche,
         limit: Math.min(20, Math.max(1, params.limit)),
         minRating: params.minRating,
+        onlyNoWebsite: params.onlyNoWebsite,
+        onlyWithPhone: params.onlyWithPhone ?? false,
         searchRound: params.searchRound ?? 0,
       }),
     })
@@ -102,6 +107,9 @@ export async function searchLeads(
     return {
       results: applyFilters(normalized, params),
       source: 'scraper',
+      scannedCount: payload.scannedCount,
+      matchedCount: payload.matchedCount,
+      partial: payload.partial,
     }
   } catch {
     return {
