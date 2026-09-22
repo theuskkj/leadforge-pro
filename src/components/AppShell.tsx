@@ -2,7 +2,7 @@ import { LayoutDashboard, Radar, Users, KanbanSquare, WandSparkles, Settings, Me
 import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet } from 'react-router-dom'
 import { Button } from './ui/button'
-import { getGooglePlacesStatus } from '../services/leadSearchService'
+import { getScraperStatus } from '../services/leadSearchService'
 
 const items = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -60,7 +60,7 @@ function NavContent({ onClick, googleReady }: { onClick?: () => void; googleRead
           <div>
             <p className="text-xs font-medium text-zinc-200">Fonte de dados</p>
             <p className="mt-1 text-[11px] text-zinc-500">
-              {googleReady === null ? 'Verificando integração...' : googleReady ? 'Google Places conectado' : 'API não configurada'}
+              {googleReady === null ? 'Verificando integração...' : googleReady ? 'Google Maps Scraper conectado' : 'API não configurada'}
             </p>
           </div>
           <span className={`grid size-7 place-items-center rounded-full ${googleReady ? 'bg-emerald-500/10' : 'bg-red-500/10'}`}>
@@ -77,7 +77,7 @@ export function AppShell() {
   const [googleReady, setGoogleReady] = useState<boolean | null>(null)
 
   useEffect(() => {
-    getGooglePlacesStatus().then(setGoogleReady)
+    getScraperStatus().then(setGoogleReady)
   }, [])
 
   return (
