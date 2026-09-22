@@ -10,7 +10,6 @@ type GooglePlace = {
   rating?: number
   userRatingCount?: number
   primaryTypeDisplayName?: { text?: string }
-  googleMapsLinks?: { placeUri?: string }
   location?: { latitude?: number; longitude?: number }
 }
 
