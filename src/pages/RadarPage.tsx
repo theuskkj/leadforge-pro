@@ -63,7 +63,6 @@ export function RadarPage() {
   })
   const [loading, setLoading] = useState(false)
   const [results, setResults] = useState<LeadSearchResult[]>([])
-  const [source, setSource] = useState<'google' | 'mock' | null>(null)
   const [showFilters, setShowFilters] = useState(false)
   const [searched, setSearched] = useState(false)
 
@@ -122,8 +121,7 @@ export function RadarPage() {
     try {
       const response = await searchLeads({ ...params, limit: Math.min(20, Math.max(1, params.limit)) }, settings)
       setResults(response.results)
-      setSource(response.source)
-      if (response.error) toast.warning(`${response.error} Usando resultados de demonstração.`)
+      if (response.error) toast.error(response.error)
     } finally {
       setLoading(false)
     }
@@ -212,13 +210,9 @@ export function RadarPage() {
               <p className="text-sm font-medium text-zinc-200">{results.length} empresas encontradas</p>
               <p className="mt-1 text-xs text-zinc-600">{noWebsiteCount} sem website · ordenadas por oportunidade</p>
             </div>
-            <span className={`inline-flex w-fit items-center gap-2 rounded-full border px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[.1em] ${
-              source === 'google'
-                ? 'border-emerald-400/15 bg-emerald-400/[0.07] text-emerald-300'
-                : 'border-amber-400/15 bg-amber-400/[0.07] text-amber-300'
-            }`}>
-              {source === 'google' ? <Globe2 className="size-3.5" /> : <Building2 className="size-3.5" />}
-              {source === 'google' ? 'Google Places' : 'Demonstração'}
+            <span className="inline-flex w-fit items-center gap-2 rounded-full border border-emerald-400/15 bg-emerald-400/[0.07] px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[.1em] text-emerald-300">
+              <Globe2 className="size-3.5" />
+              Google Places
             </span>
           </div>
 
