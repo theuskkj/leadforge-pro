@@ -26,3 +26,23 @@ jobs:
         run: npm run build
       - name: Lint
         run: npm run lint
+
+  scraper-container:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Build scraper Vercel container
+        run: docker build -f scraper-vercel/Dockerfile.vercel -t leadforge-scraper ./scraper-vercel
+      - name: Smoke test scraper health
+        run: |
+          docker run -d --rm --name leadforge-scraper-test -p 18080:8080 -e PORT=8080 -e SCRAPER_SHARED_SECRET=test-secret leadforge-scraper
+          for i in {1..20}; do
+            if curl --fail --silent http://127.0.0.1:18080/health > /tmp/health.json; then
+              cat /tmp/health.json
+              exit 0
+            fi
+            sleep 1
+          done
+          docker logs leadforge-scraper-test
+          exit 1
