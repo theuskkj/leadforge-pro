@@ -173,6 +173,26 @@ export function RadarPage() {
     return leadsIndex.get(`${item.name.trim().toLowerCase()}::${item.address.trim().toLowerCase()}`)
   }
 
+
+  function resultKeys(item: Pick<LeadSearchResult, 'id' | 'name' | 'address'>) {
+    return [
+      item.id.trim().toLowerCase(),
+      `${item.name.trim().toLowerCase()}::${item.address.trim().toLowerCase()}`,
+    ].filter(Boolean)
+  }
+
+  function leadKeys(item: Pick<Lead, 'id' | 'name' | 'address'>) {
+    return [
+      item.id.trim().toLowerCase(),
+      `${item.name.trim().toLowerCase()}::${item.address.trim().toLowerCase()}`,
+    ].filter(Boolean)
+  }
+
+  const visibleResults = useMemo(
+    () => results.filter((item) => !getExistingLead(item)),
+    [results, leads, leadsIndex],
+  )
+
   function toLead(item: LeadSearchResult): Lead {
     const existing = getExistingLead(item)
     if (existing) return existing
@@ -210,6 +230,10 @@ export function RadarPage() {
 
     const continuing = canContinueSearch
     const round = continuing ? (params.searchRound ?? 0) : 0
+    const excludeKeys = Array.from(new Set([
+      ...leads.flatMap(leadKeys),
+      ...(continuing ? results.flatMap(resultKeys) : []),
+    ])).slice(-500)
 
     setLoading(true)
     setSearched(true)
@@ -218,6 +242,7 @@ export function RadarPage() {
         ...params,
         limit: Math.min(20, Math.max(1, params.limit)),
         searchRound: round,
+        excludeKeys,
       }, settings)
 
       if (continuing) {
@@ -250,7 +275,7 @@ export function RadarPage() {
     }
   }
 
-  const noWebsiteCount = results.filter((result) => !result.hasWebsite).length
+  const noWebsiteCount = visibleResults.filter((result) => !result.hasWebsite).length
 
   return (
     <>
@@ -330,7 +355,7 @@ export function RadarPage() {
         <>
           <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-sm font-medium text-zinc-200">{results.length} empresas encontradas</p>
+              <p className="text-sm font-medium text-zinc-200">{visibleResults.length} empresas novas encontradas</p>
               <p className="mt-1 text-xs text-zinc-600">
                 {noWebsiteCount} sem website · {searchMeta.scannedCount > 0 ? `${searchMeta.scannedCount} analisadas no Maps nesta rodada · ` : ''}ordenadas por oportunidade
               </p>
@@ -341,12 +366,12 @@ export function RadarPage() {
             </span>
           </div>
 
-          {results.length === 0 ? (
+          {visibleResults.length === 0 ? (
             <Card className="mt-4 py-14 text-center">
               <div className="mx-auto grid size-11 place-items-center rounded-2xl border border-white/[0.07] bg-white/[0.035]">
                 <Search className="size-5 text-zinc-600" />
               </div>
-              <p className="mt-4 text-sm font-medium text-zinc-200">Nenhuma empresa encontrada neste lote</p>
+              <p className="mt-4 text-sm font-medium text-zinc-200">Nenhuma empresa nova encontrada neste lote</p>
               <p className="mx-auto mt-2 max-w-md text-xs leading-5 text-zinc-600">
                 {searchMeta.scannedCount > 0
                   ? `O Google Maps retornou ${searchMeta.scannedCount} empresas nesta região, mas nenhuma passou pelos filtros atuais.`
@@ -358,7 +383,7 @@ export function RadarPage() {
             </Card>
           ) : (
             <div className="mt-4 grid gap-3 xl:grid-cols-2">
-              {[...results].sort((a, b) => b.priority - a.priority).map((item) => {
+              {[...visibleResults].sort((a, b) => b.priority - a.priority).map((item) => {
                 const saved = Boolean(getExistingLead(item))
                 const mapLink = item.googleMapsUrl || mapsUrl(item.name, item.address)
                 return (
