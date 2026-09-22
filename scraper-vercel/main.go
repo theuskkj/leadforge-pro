@@ -290,6 +290,7 @@ func health(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	mux := http.NewServeMux()
+	mux.HandleFunc("/", health)
 	mux.HandleFunc("/health", health)
 	mux.HandleFunc("/scrape", search)
 
