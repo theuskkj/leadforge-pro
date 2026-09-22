@@ -60,11 +60,11 @@ function NavContent({ onClick, googleReady }: { onClick?: () => void; googleRead
           <div>
             <p className="text-xs font-medium text-zinc-200">Fonte de dados</p>
             <p className="mt-1 text-[11px] text-zinc-500">
-              {googleReady === null ? 'Verificando integração...' : googleReady ? 'Google Places conectado' : 'Modo demonstração'}
+              {googleReady === null ? 'Verificando integração...' : googleReady ? 'Google Places conectado' : 'API não configurada'}
             </p>
           </div>
-          <span className={`grid size-7 place-items-center rounded-full ${googleReady ? 'bg-emerald-500/10' : 'bg-amber-500/10'}`}>
-            <Circle className={`size-2.5 fill-current ${googleReady ? 'text-emerald-400' : 'text-amber-400'}`} />
+          <span className={`grid size-7 place-items-center rounded-full ${googleReady ? 'bg-emerald-500/10' : 'bg-red-500/10'}`}>
+            <Circle className={`size-2.5 fill-current ${googleReady ? 'text-emerald-400' : 'text-red-400'}`} />
           </span>
         </div>
       </div>
