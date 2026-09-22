@@ -71,4 +71,7 @@ export interface SearchResponse {
   results: LeadSearchResult[]
   source: 'scraper'
   error?: string
+  scannedCount?: number
+  matchedCount?: number
+  partial?: boolean
 }
