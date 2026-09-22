@@ -286,16 +286,19 @@ export function RadarPage() {
       {!searched && !loading ? (
         <div className="mt-4 grid gap-3 sm:grid-cols-3">
           {[
-            ['Pesquise negócios reais', 'Google Places localiza empresas por nicho e região.', Globe2],
-            ['Priorize oportunidades', 'O score favorece empresas sem site e com boa demanda.', Sparkles],
-            ['Leve para o pipeline', 'Salve o lead e acompanhe cada etapa comercial.', Building2],
-          ].map(([title, description, Icon]) => (
-            <div key={String(title)} className="rounded-2xl border border-white/[0.055] bg-white/[0.02] p-4">
-              <Icon className="size-4 text-[#ff5668]" />
-              <p className="mt-3 text-xs font-medium text-zinc-300">{String(title)}</p>
-              <p className="mt-1.5 text-[11px] leading-5 text-zinc-600">{String(description)}</p>
-            </div>
-          ))}
+            { title: 'Pesquise negócios reais', description: 'Google Places localiza empresas por nicho e região.', icon: Globe2 },
+            { title: 'Priorize oportunidades', description: 'O score favorece empresas sem site e com boa demanda.', icon: Sparkles },
+            { title: 'Leve para o pipeline', description: 'Salve o lead e acompanhe cada etapa comercial.', icon: Building2 },
+          ].map((feature) => {
+            const Icon = feature.icon
+            return (
+              <div key={feature.title} className="rounded-2xl border border-white/[0.055] bg-white/[0.02] p-4">
+                <Icon className="size-4 text-[#ff5668]" />
+                <p className="mt-3 text-xs font-medium text-zinc-300">{feature.title}</p>
+                <p className="mt-1.5 text-[11px] leading-5 text-zinc-600">{feature.description}</p>
+              </div>
+            )
+          })}
         </div>
       ) : null}
     </>
