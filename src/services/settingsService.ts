@@ -5,9 +5,8 @@ const SETTINGS_KEY = 'leadforge:settings'
 export const defaultSettings: WorkspaceSettings = {
   workspaceName: 'LeadForge Pro',
   currency: 'BRL',
-  defaultPotentialValue: 6000,
+  defaultPotentialValue: 0,
   defaultResultLimit: 20,
-  searchProvider: 'google',
   compactMode: false,
 }
 
@@ -15,11 +14,11 @@ export function loadSettings() {
   try {
     const raw = localStorage.getItem(SETTINGS_KEY)
     if (!raw) return defaultSettings
-    const parsed = JSON.parse(raw) as Partial<WorkspaceSettings> & { searchProvider?: string }
+    const parsed = JSON.parse(raw) as Partial<WorkspaceSettings>
     return {
       ...defaultSettings,
       ...parsed,
-      searchProvider: parsed.searchProvider === 'mock' ? 'mock' : 'google',
+      defaultPotentialValue: 0,
     } as WorkspaceSettings
   } catch {
     return defaultSettings
