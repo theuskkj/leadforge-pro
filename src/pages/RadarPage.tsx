@@ -59,7 +59,7 @@ export function RadarPage() {
     location: 'São Paulo - SP',
     niche: 'dentistas',
     limit: Math.min(settings.defaultResultLimit, 20),
-    onlyNoWebsite: true,
+    onlyNoWebsite: false,
   })
   const [loading, setLoading] = useState(false)
   const [results, setResults] = useState<LeadSearchResult[]>([])
