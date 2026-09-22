@@ -10,12 +10,11 @@ const params: SearchParams = {
   onlyNoWebsite: false,
 }
 
-const googleSettings: WorkspaceSettings = {
+const settings: WorkspaceSettings = {
   workspaceName: 'LeadForge Pro',
   currency: 'BRL',
-  defaultPotentialValue: 6000,
+  defaultPotentialValue: 0,
   defaultResultLimit: 20,
-  searchProvider: 'google',
   compactMode: false,
 }
 
@@ -24,9 +23,9 @@ afterEach(() => {
 })
 
 describe('normalizeGooglePlace', () => {
-  it('normaliza Place API para LeadSearchResult', () => {
+  it('normaliza Place API para LeadSearchResult real', () => {
     const result = normalizeGooglePlace({
-      id: 'places/abc',
+      id: 'ChIJ123',
       displayName: { text: 'Clínica Teste' },
       formattedAddress: 'Rua A, 10 - São Paulo',
       nationalPhoneNumber: '(11) 99999-0000',
@@ -34,32 +33,19 @@ describe('normalizeGooglePlace', () => {
       rating: 4.8,
       userRatingCount: 321,
       primaryTypeDisplayName: { text: 'Clínica médica' },
-      googleMapsLinks: { placeUri: 'https://maps.google.com/test' },
       location: { latitude: -23.5, longitude: -46.6 },
     }, params)
 
     expect(result.name).toBe('Clínica Teste')
     expect(result.website).toBe('https://clinic.example')
-    expect(result.googleMapsUrl).toBe('https://maps.google.com/test')
+    expect(result.googleMapsUrl).toContain('query_place_id=ChIJ123')
     expect(result.lat).toBe(-23.5)
     expect(result.priority).toBeGreaterThan(0)
   })
 })
 
 describe('searchLeads', () => {
-  it('usa mock quando provider é mock', async () => {
-    const fetchSpy = vi.fn()
-    vi.stubGlobal('fetch', fetchSpy)
-
-    const result = await searchLeads(params, { ...googleSettings, searchProvider: 'mock' })
-
-    expect(result.isDemo).toBe(true)
-    expect(result.source).toBe('mock')
-    expect(result.results.length).toBeGreaterThan(0)
-    expect(fetchSpy).not.toHaveBeenCalled()
-  })
-
-  it('usa Google Places quando provider é google', async () => {
+  it('usa somente Google Places', async () => {
     const fetchSpy = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({
@@ -76,26 +62,23 @@ describe('searchLeads', () => {
     })
     vi.stubGlobal('fetch', fetchSpy)
 
-    const result = await searchLeads(params, googleSettings)
+    const result = await searchLeads(params, settings)
 
     expect(fetchSpy).toHaveBeenCalledWith('/api/google-places', expect.objectContaining({ method: 'POST' }))
-    expect(result.isDemo).toBe(false)
     expect(result.source).toBe('google')
     expect(result.results[0]?.name).toBe('Clínica Real')
   })
 
-  it('faz fallback para mock quando Google Places falha', async () => {
+  it('não fabrica resultados quando a API falha', async () => {
     const fetchSpy = vi.fn().mockResolvedValue({
       ok: false,
       json: async () => ({ error: 'API não configurada' }),
     })
     vi.stubGlobal('fetch', fetchSpy)
 
-    const result = await searchLeads(params, googleSettings)
+    const result = await searchLeads(params, settings)
 
-    expect(result.isDemo).toBe(true)
-    expect(result.source).toBe('mock')
+    expect(result.results).toEqual([])
     expect(result.error).toContain('API')
-    expect(result.results.length).toBeGreaterThan(0)
   })
 })
