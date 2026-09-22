@@ -17,21 +17,13 @@ type ScraperResult = {
   lng?: number
 }
 
-type StartResponse = {
-  jobId?: string
-  status?: string
+type ScraperResponse = {
+  source?: 'scraper'
   error?: string
-}
-
-type JobResponse = {
-  jobId?: string
-  status?: string
-  error?: string
-  resultCount?: number
   results?: ScraperResult[]
 }
 
-function normalizeScraperResult(item: ScraperResult, params: Pick<SearchParams, 'niche' | 'location'>): LeadSearchResult {
+export function normalizeScraperResult(item: ScraperResult, params: Pick<SearchParams, 'niche' | 'location'>): LeadSearchResult {
   const name = item.name?.trim() || 'Empresa sem nome informado'
   const address = item.address?.trim() || params.location
   const phone = item.phone?.trim()
@@ -72,11 +64,7 @@ function applyFilters(results: LeadSearchResult[], params: SearchParams) {
       return true
     })
     .sort((a, b) => b.priority - a.priority)
-    .slice(0, Math.min(50, Math.max(1, params.limit)))
-}
-
-function wait(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms))
+    .slice(0, Math.min(20, Math.max(1, params.limit)))
 }
 
 export async function searchLeads(
@@ -84,69 +72,35 @@ export async function searchLeads(
   _settings?: WorkspaceSettings,
 ): Promise<SearchResponse> {
   try {
-    const startResponse = await fetch('/api/maps-scraper', {
+    const response = await fetch('/api/maps-scraper', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         country: params.country,
         location: params.location,
         niche: params.niche,
-        limit: Math.min(50, Math.max(1, params.limit)),
+        limit: Math.min(20, Math.max(1, params.limit)),
+        minRating: params.minRating,
       }),
     })
 
-    const startPayload = (await startResponse.json()) as StartResponse
+    const payload = (await response.json()) as ScraperResponse
 
-    if (!startResponse.ok || !startPayload.jobId) {
+    if (!response.ok) {
       return {
         results: [],
         source: 'scraper',
-        error: startPayload.error || 'Não foi possível iniciar a pesquisa no Google Maps.',
+        error: payload.error || 'Não foi possível pesquisar no Google Maps.',
       }
     }
 
-    const maxAttempts = 90
-
-    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
-      const statusResponse = await fetch(
-        `/api/maps-scraper?job_id=${encodeURIComponent(startPayload.jobId)}`,
-      )
-      const statusPayload = (await statusResponse.json()) as JobResponse
-
-      if (!statusResponse.ok) {
-        return {
-          results: [],
-          source: 'scraper',
-          error: statusPayload.error || 'Não foi possível acompanhar a pesquisa.',
-        }
-      }
-
-      if (statusPayload.status === 'completed') {
-        const normalized = (statusPayload.results ?? []).map((item) =>
-          normalizeScraperResult(item, params),
-        )
-
-        return {
-          results: applyFilters(normalized, params),
-          source: 'scraper',
-        }
-      }
-
-      if (['failed', 'cancelled', 'discarded'].includes(statusPayload.status || '')) {
-        return {
-          results: [],
-          source: 'scraper',
-          error: statusPayload.error || 'A pesquisa foi interrompida pelo servidor.',
-        }
-      }
-
-      await wait(2000)
-    }
+    const normalized = (payload.results ?? []).map((item) =>
+      normalizeScraperResult(item, params),
+    )
 
     return {
-      results: [],
+      results: applyFilters(normalized, params),
       source: 'scraper',
-      error: 'A pesquisa demorou mais que o esperado. Tente novamente com menos resultados.',
     }
   } catch {
     return {
@@ -167,5 +121,3 @@ export async function getScraperStatus() {
     return false
   }
 }
-
-export { normalizeScraperResult }
