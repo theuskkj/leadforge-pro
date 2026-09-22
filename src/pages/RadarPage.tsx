@@ -1,33 +1,71 @@
 import { useMemo, useState } from 'react'
-import { ExternalLink, LoaderCircle, MapPinned, Save, WandSparkles } from 'lucide-react'
+import {
+  Building2,
+  Check,
+  ExternalLink,
+  Globe2,
+  LoaderCircle,
+  MapPin,
+  MapPinned,
+  Phone,
+  Save,
+  Search,
+  SlidersHorizontal,
+  Sparkles,
+  Star,
+  WandSparkles,
+} from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import { toast } from 'sonner'
 import { PageHeader } from '../components/PageHeader'
 import { PriorityBadge, WebsiteBadge } from '../components/Badges'
 import { Button } from '../components/ui/button'
 import { Card } from '../components/ui/card'
 import { Checkbox } from '../components/ui/checkbox'
 import { Input } from '../components/ui/input'
-import { Select } from '../components/ui/select'
 import { useAppData } from '../hooks/useAppData'
-import { computePriority, mapsUrl, uid } from '../lib/utils'
+import { computePriority, formatNumber, mapsUrl, uid } from '../lib/utils'
 import { searchLeads } from '../services/leadSearchService'
 import type { Lead, LeadSearchResult, SearchParams } from '../types'
 
-const niches = ['concessionárias', 'arquitetos', 'clínicas', 'restaurantes', 'academias', 'imobiliárias', 'salões', 'oficinas', 'contabilidades', 'advogados']
+const nicheSuggestions = [
+  'dentistas',
+  'clínicas',
+  'advogados',
+  'imobiliárias',
+  'restaurantes',
+  'academias',
+  'arquitetos',
+  'oficinas',
+  'contabilidades',
+  'salões de beleza',
+  'concessionárias',
+]
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label className="block">
+      <span className="mb-2 block text-[10px] font-semibold uppercase tracking-[.14em] text-zinc-600">{label}</span>
+      {children}
+    </label>
+  )
+}
 
 export function RadarPage() {
   const { leads, addLead, settings } = useAppData()
   const navigate = useNavigate()
   const [params, setParams] = useState<SearchParams>({
     country: 'Brasil',
-    location: 'São Paulo',
-    niche: 'concessionárias',
-    limit: settings.defaultResultLimit,
+    location: 'São Paulo - SP',
+    niche: 'dentistas',
+    limit: Math.min(settings.defaultResultLimit, 20),
     onlyNoWebsite: true,
   })
   const [loading, setLoading] = useState(false)
   const [results, setResults] = useState<LeadSearchResult[]>([])
-  const [isDemo, setIsDemo] = useState(false)
+  const [source, setSource] = useState<'google' | 'mock' | null>(null)
+  const [showFilters, setShowFilters] = useState(false)
+  const [searched, setSearched] = useState(false)
 
   const leadsIndex = useMemo(() => {
     return new Map(
@@ -74,80 +112,192 @@ export function RadarPage() {
   }
 
   async function onSearch() {
+    if (!params.location.trim() || !params.niche.trim()) {
+      toast.error('Informe uma localização e um nicho para pesquisar.')
+      return
+    }
+
     setLoading(true)
-    const response = await searchLeads(params, settings)
-    setResults(response.results)
-    setIsDemo(response.isDemo)
-    setLoading(false)
+    setSearched(true)
+    try {
+      const response = await searchLeads({ ...params, limit: Math.min(20, Math.max(1, params.limit)) }, settings)
+      setResults(response.results)
+      setSource(response.source)
+      if (response.error) toast.warning(`${response.error} Usando resultados de demonstração.`)
+    } finally {
+      setLoading(false)
+    }
   }
 
-  function saveFromResult(item: LeadSearchResult) {
-    return toLead(item)
-  }
-
-  function openDetails(item: LeadSearchResult) {
-    const lead = toLead(item)
-    navigate(`/lead/${lead.id}`)
-  }
+  const noWebsiteCount = results.filter((result) => !result.hasWebsite).length
 
   return (
     <>
-      <PageHeader title="Radar de leads" subtitle="Pesquise empresas locais e salve oportunidades" />
-      <Card>
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-          <Input value={params.country} onChange={(e) => setParams((v) => ({ ...v, country: e.target.value }))} placeholder="País" />
-          <Input value={params.location} onChange={(e) => setParams((v) => ({ ...v, location: e.target.value }))} placeholder="Cidade / estado / região" />
-          <Select value={params.niche} onChange={(e) => setParams((v) => ({ ...v, niche: e.target.value }))}>
-            {niches.map((niche) => <option key={niche}>{niche}</option>)}
-          </Select>
-          <Input type="number" min={1} max={100} value={params.limit} onChange={(e) => setParams((v) => ({ ...v, limit: Number(e.target.value) }))} placeholder="Máximo" />
-          <Input type="number" min={0} max={5} step="0.1" value={params.minRating ?? ''} onChange={(e) => setParams((v) => ({ ...v, minRating: e.target.value ? Number(e.target.value) : undefined }))} placeholder="Nota mínima" />
-          <div className="flex items-center gap-2 rounded-2xl border border-zinc-700 bg-[#1a1a1d] px-3 text-sm text-zinc-300">
-            <Checkbox checked={params.onlyWithPhone ?? false} onChange={(e) => setParams((v) => ({ ...v, onlyWithPhone: e.target.checked }))} />
-            Somente com telefone
+      <PageHeader
+        eyebrow="Radar comercial"
+        title="Encontre empresas prontas para virar clientes."
+        subtitle="Pesquise negócios locais, identifique quem ainda não tem website e leve as melhores oportunidades direto para o seu pipeline."
+      />
+
+      <Card className="overflow-hidden p-0">
+        <div className="border-b border-white/[0.06] bg-[radial-gradient(circle_at_80%_-20%,rgba(255,36,56,.13),transparent_28rem)] p-5 sm:p-6">
+          <div className="flex items-start gap-3">
+            <div className="grid size-10 shrink-0 place-items-center rounded-2xl border border-[#ff2438]/20 bg-[#ff2438]/10">
+              <Search className="size-4.5 text-[#ff5668]" />
+            </div>
+            <div>
+              <p className="text-[15px] font-semibold text-white">Nova pesquisa</p>
+              <p className="mt-1 text-xs leading-5 text-zinc-500">Busque empresas por nicho e localização usando Google Places.</p>
+            </div>
           </div>
-          <div className="flex items-center gap-2 rounded-2xl border border-zinc-700 bg-[#1a1a1d] px-3 text-sm text-zinc-300">
-            <Checkbox checked={params.onlyNoWebsite} onChange={(e) => setParams((v) => ({ ...v, onlyNoWebsite: e.target.checked }))} />
-            Somente sem site
+
+          <div className="mt-6 grid gap-3 md:grid-cols-2 xl:grid-cols-[.8fr_1.35fr_1.2fr_.55fr]">
+            <Field label="País">
+              <Input value={params.country} onChange={(e) => setParams((value) => ({ ...value, country: e.target.value }))} />
+            </Field>
+            <Field label="Localização">
+              <Input value={params.location} onChange={(e) => setParams((value) => ({ ...value, location: e.target.value }))} placeholder="Cidade, estado ou região" />
+            </Field>
+            <Field label="Nicho">
+              <>
+                <Input list="leadforge-niches" value={params.niche} onChange={(e) => setParams((value) => ({ ...value, niche: e.target.value }))} placeholder="Ex.: dentistas, clínicas, imobiliárias" />
+                <datalist id="leadforge-niches">{nicheSuggestions.map((niche) => <option key={niche} value={niche} />)}</datalist>
+              </>
+            </Field>
+            <Field label="Resultados">
+              <Input type="number" min={1} max={20} value={params.limit} onChange={(e) => setParams((value) => ({ ...value, limit: Math.min(20, Number(e.target.value) || 1) }))} />
+            </Field>
           </div>
-          <Button onClick={onSearch} className="h-11">
-            {loading ? <LoaderCircle className="mr-2 h-4 w-4 animate-spin" /> : null}
-            Buscar
-          </Button>
+
+          {showFilters ? (
+            <div className="mt-4 grid gap-3 rounded-2xl border border-white/[0.06] bg-black/10 p-4 sm:grid-cols-3">
+              <Field label="Nota mínima">
+                <Input type="number" min={0} max={5} step="0.1" value={params.minRating ?? ''} onChange={(e) => setParams((value) => ({ ...value, minRating: e.target.value ? Number(e.target.value) : undefined }))} placeholder="Ex.: 4.0" />
+              </Field>
+              <label className="flex min-h-11 items-center gap-3 self-end rounded-xl border border-white/[0.07] bg-[#0d0e11] px-3.5 text-xs text-zinc-400">
+                <Checkbox checked={params.onlyNoWebsite} onChange={(e) => setParams((value) => ({ ...value, onlyNoWebsite: e.target.checked }))} />
+                Somente sem site
+              </label>
+              <label className="flex min-h-11 items-center gap-3 self-end rounded-xl border border-white/[0.07] bg-[#0d0e11] px-3.5 text-xs text-zinc-400">
+                <Checkbox checked={params.onlyWithPhone ?? false} onChange={(e) => setParams((value) => ({ ...value, onlyWithPhone: e.target.checked }))} />
+                Somente com telefone
+              </label>
+            </div>
+          ) : null}
+
+          <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <Button variant="ghost" onClick={() => setShowFilters((value) => !value)} className="justify-start sm:justify-center">
+              <SlidersHorizontal className="size-4" /> {showFilters ? 'Ocultar filtros' : 'Filtros avançados'}
+            </Button>
+            <Button onClick={onSearch} disabled={loading} className="h-11 px-5">
+              {loading ? <LoaderCircle className="size-4 animate-spin" /> : <Search className="size-4" />}
+              {loading ? 'Buscando empresas...' : 'Buscar empresas'}
+            </Button>
+          </div>
         </div>
       </Card>
 
-      {isDemo ? <p className="mt-3 inline-flex rounded-full bg-amber-900/60 px-3 py-1 text-xs text-amber-200">Demonstração</p> : null}
+      {loading ? (
+        <div className="mt-4 grid gap-3 xl:grid-cols-2">
+          {Array.from({ length: 6 }).map((_, index) => (
+            <div key={index} className="pro-panel h-[250px] animate-pulse rounded-[20px] bg-white/[0.025]" />
+          ))}
+        </div>
+      ) : null}
 
-      <div className="mt-4 grid gap-3">
-        {loading
-          ? Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-28 animate-pulse rounded-3xl bg-zinc-900" />)
-          : results.map((item) => {
-              const saved = Boolean(getExistingLead(item))
-              return (
-                <Card key={item.id}>
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                      <p className="text-lg font-semibold text-white">{item.name}</p>
-                      <p className="text-sm text-zinc-400">{item.niche} • {item.address}</p>
-                      <p className="text-sm text-zinc-500">⭐ {item.rating} ({item.reviewCount} avaliações) {item.phone ? `• ${item.phone}` : ''}</p>
+      {!loading && searched ? (
+        <>
+          <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm font-medium text-zinc-200">{results.length} empresas encontradas</p>
+              <p className="mt-1 text-xs text-zinc-600">{noWebsiteCount} sem website · ordenadas por oportunidade</p>
+            </div>
+            <span className={`inline-flex w-fit items-center gap-2 rounded-full border px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[.1em] ${
+              source === 'google'
+                ? 'border-emerald-400/15 bg-emerald-400/[0.07] text-emerald-300'
+                : 'border-amber-400/15 bg-amber-400/[0.07] text-amber-300'
+            }`}>
+              {source === 'google' ? <Globe2 className="size-3.5" /> : <Building2 className="size-3.5" />}
+              {source === 'google' ? 'Google Places' : 'Demonstração'}
+            </span>
+          </div>
+
+          {results.length === 0 ? (
+            <Card className="mt-4 py-14 text-center">
+              <div className="mx-auto grid size-11 place-items-center rounded-2xl border border-white/[0.07] bg-white/[0.035]">
+                <Search className="size-5 text-zinc-600" />
+              </div>
+              <p className="mt-4 text-sm font-medium text-zinc-200">Nenhuma empresa encontrada</p>
+              <p className="mx-auto mt-2 max-w-md text-xs leading-5 text-zinc-600">Tente ampliar a região, trocar o nicho ou remover alguns filtros.</p>
+            </Card>
+          ) : (
+            <div className="mt-4 grid gap-3 xl:grid-cols-2">
+              {[...results].sort((a, b) => b.priority - a.priority).map((item) => {
+                const saved = Boolean(getExistingLead(item))
+                const mapLink = item.googleMapsUrl || mapsUrl(item.name, item.address)
+                return (
+                  <Card key={item.id} className="pro-card-hover flex min-h-[250px] flex-col">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <WebsiteBadge hasWebsite={item.hasWebsite} />
+                        <span className="rounded-full border border-white/[0.07] bg-white/[0.035] px-2.5 py-1 text-[10px] font-medium text-zinc-500">{item.niche}</span>
+                      </div>
+                      <div className="text-right">
+                        <p className="tabular text-[28px] font-semibold tracking-[-0.05em] text-white">{item.priority}</p>
+                        <p className="text-[9px] font-semibold uppercase tracking-[.12em] text-zinc-600">prioridade</p>
+                      </div>
                     </div>
-                    <div className="flex flex-wrap gap-2">
-                      <WebsiteBadge hasWebsite={item.hasWebsite} />
-                      <PriorityBadge priority={item.priority} />
+
+                    <div className="mt-4">
+                      <h3 className="text-[18px] font-semibold tracking-[-0.02em] text-white">{item.name}</h3>
+                      <div className="mt-3 space-y-2 text-xs text-zinc-500">
+                        <p className="flex items-start gap-2"><MapPin className="mt-0.5 size-3.5 shrink-0 text-zinc-600" /><span>{item.address}</span></p>
+                        <p className="flex items-center gap-2"><Phone className="size-3.5 text-zinc-600" /><span>{item.phone || 'Telefone não informado'}</span></p>
+                        <p className="flex items-center gap-2">
+                          <Star className="size-3.5 fill-amber-300 text-amber-300" />
+                          <span className="font-medium text-zinc-300">{item.rating ? item.rating.toFixed(1) : '—'}</span>
+                          <span>· {formatNumber(item.reviewCount)} avaliações</span>
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <Button variant="secondary" onClick={() => saveFromResult(item)} disabled={saved}><Save className="mr-1 h-4 w-4" />{saved ? 'Salvo' : 'Salvar lead'}</Button>
-                    <Button variant="ghost" onClick={() => openDetails(item)}>Detalhes</Button>
-                    <a href={mapsUrl(item.name, item.address)} target="_blank" rel="noreferrer"><Button variant="outline"><MapPinned className="mr-1 h-4 w-4" />Google Maps</Button></a>
-                    <Button variant="outline" onClick={() => navigate('/prompt-generator', { state: { prefill: { companyName: item.name, niche: item.niche, city: item.city, description: `Empresa encontrada no radar em ${item.city}.`, targetAudience: '', services: item.niche, siteGoal: 'Gerar contatos qualificados', visualStyle: 'Premium escuro', colors: '#070708, #ff2438', cta: 'Solicitar orçamento' } } })}><WandSparkles className="mr-1 h-4 w-4" />Gerar prompt</Button>
-                    {item.website ? <a href={item.website} target="_blank" rel="noreferrer"><Button variant="ghost"><ExternalLink className="mr-1 h-4 w-4" />Site</Button></a> : null}
-                  </div>
-                </Card>
-              )
-            })}
-      </div>
+
+                    <div className="mt-auto flex flex-wrap gap-2 border-t border-white/[0.055] pt-4">
+                      <Button onClick={() => toLead(item)} disabled={saved} className="sm:min-w-[118px]">
+                        {saved ? <Check className="size-4" /> : <Save className="size-4" />}{saved ? 'Salvo' : 'Salvar lead'}
+                      </Button>
+                      <Button variant="secondary" onClick={() => {
+                        const lead = toLead(item)
+                        navigate(`/lead/${lead.id}`)
+                      }}>Detalhes</Button>
+                      <a href={mapLink} target="_blank" rel="noreferrer"><Button variant="outline"><MapPinned className="size-4" />Maps</Button></a>
+                      <Button variant="ghost" onClick={() => navigate('/prompt-generator', { state: { prefill: { companyName: item.name, niche: item.niche, city: item.city, description: `Empresa encontrada no radar em ${item.city}.`, targetAudience: '', services: item.niche, siteGoal: 'Gerar contatos qualificados', visualStyle: 'Premium e confiável', colors: '#070708, #ff2438', cta: 'Solicitar orçamento' } } })}>
+                        <WandSparkles className="size-4" />Gerar site
+                      </Button>
+                      {item.website ? <a href={item.website} target="_blank" rel="noreferrer" className="ml-auto"><Button variant="ghost"><ExternalLink className="size-4" />Site</Button></a> : null}
+                    </div>
+                  </Card>
+                )
+              })}
+            </div>
+          )}
+        </>
+      ) : null}
+
+      {!searched && !loading ? (
+        <div className="mt-4 grid gap-3 sm:grid-cols-3">
+          {[
+            ['Pesquise negócios reais', 'Google Places localiza empresas por nicho e região.', Globe2],
+            ['Priorize oportunidades', 'O score favorece empresas sem site e com boa demanda.', Sparkles],
+            ['Leve para o pipeline', 'Salve o lead e acompanhe cada etapa comercial.', Building2],
+          ].map(([title, description, Icon]) => (
+            <div key={String(title)} className="rounded-2xl border border-white/[0.055] bg-white/[0.02] p-4">
+              <Icon className="size-4 text-[#ff5668]" />
+              <p className="mt-3 text-xs font-medium text-zinc-300">{String(title)}</p>
+              <p className="mt-1.5 text-[11px] leading-5 text-zinc-600">{String(description)}</p>
+            </div>
+          ))}
+        </div>
+      ) : null}
     </>
   )
 }
