@@ -18,12 +18,14 @@ import (
 )
 
 type SearchRequest struct {
-	Country     string  `json:"country"`
-	Location    string  `json:"location"`
-	Niche       string  `json:"niche"`
-	Limit       int     `json:"limit"`
-	MinRating   float64 `json:"minRating,omitempty"`
-	SearchRound int     `json:"searchRound,omitempty"`
+	Country       string  `json:"country"`
+	Location      string  `json:"location"`
+	Niche         string  `json:"niche"`
+	Limit         int     `json:"limit"`
+	MinRating     float64 `json:"minRating,omitempty"`
+	OnlyNoWebsite bool    `json:"onlyNoWebsite,omitempty"`
+	OnlyWithPhone bool    `json:"onlyWithPhone,omitempty"`
+	SearchRound   int     `json:"searchRound,omitempty"`
 }
 
 type SearchVariant struct {
@@ -101,49 +103,49 @@ func clean(s string, max int) string {
 
 
 func buildSearchVariants(req SearchRequest) []SearchVariant {
-	base := fmt.Sprintf("%s em %s, %s", req.Niche, req.Location, req.Country)
+	location := strings.TrimSpace(req.Location)
+	country := strings.TrimSpace(req.Country)
+	base := strings.TrimSpace(fmt.Sprintf("%s %s %s", req.Niche, location, country))
 
 	var labels []struct {
 		id     string
-		prefix string
+		region string
 	}
 
-	country := strings.ToLower(strings.TrimSpace(req.Country))
-	if country == "brasil" || country == "brazil" || country == "" {
+	countryLower := strings.ToLower(country)
+	if countryLower == "brasil" || countryLower == "brazil" || countryLower == "" {
 		labels = []struct {
 			id     string
-			prefix string
+			region string
 		}{
-			{id: "base", prefix: ""},
-			{id: "centro", prefix: "centro de "},
-			{id: "norte", prefix: "zona norte de "},
-			{id: "sul", prefix: "zona sul de "},
-			{id: "leste", prefix: "zona leste de "},
-			{id: "oeste", prefix: "zona oeste de "},
+			{id: "base", region: ""},
+			{id: "centro", region: "centro"},
+			{id: "norte", region: "zona norte"},
+			{id: "sul", region: "zona sul"},
+			{id: "leste", region: "zona leste"},
+			{id: "oeste", region: "zona oeste"},
 		}
 	} else {
 		labels = []struct {
 			id     string
-			prefix string
+			region string
 		}{
-			{id: "base", prefix: ""},
-			{id: "center", prefix: "city center of "},
-			{id: "north", prefix: "north of "},
-			{id: "south", prefix: "south of "},
-			{id: "east", prefix: "east of "},
-			{id: "west", prefix: "west of "},
+			{id: "base", region: ""},
+			{id: "center", region: "city center"},
+			{id: "north", region: "north"},
+			{id: "south", region: "south"},
+			{id: "east", region: "east"},
+			{id: "west", region: "west"},
 		}
 	}
 
-	// Keep each HTTP request small and fast. Repeated searches rotate through
-	// different pairs, so coverage grows without one huge Chromium job.
 	pairs := [][2]int{
-		{0, 1}, // cidade + centro
-		{2, 3}, // norte + sul
-		{4, 5}, // leste + oeste
-		{0, 2}, // cidade + norte
-		{3, 4}, // sul + leste
-		{1, 5}, // centro + oeste
+		{0, 1},
+		{2, 3},
+		{4, 5},
+		{0, 2},
+		{3, 4},
+		{1, 5},
 	}
 
 	round := req.SearchRound
@@ -161,8 +163,8 @@ func buildSearchVariants(req SearchRequest) []SearchVariant {
 	for i := 0; i < count; i++ {
 		item := labels[pair[i]]
 		query := base
-		if item.prefix != "" {
-			query = fmt.Sprintf("%s em %s%s, %s", req.Niche, item.prefix, req.Location, req.Country)
+		if item.region != "" {
+			query = strings.TrimSpace(fmt.Sprintf("%s %s %s %s", req.Niche, item.region, location, country))
 		}
 		variants = append(variants, SearchVariant{ID: item.id, Query: query})
 	}
@@ -178,16 +180,25 @@ func entryIdentity(e Entry) string {
 	return strings.ToLower(strings.TrimSpace(e.Title) + "::" + strings.TrimSpace(e.Address))
 }
 
-func distributeEntries(entries []Entry, variants []SearchVariant, limit int, minRating float64) []Entry {
+func distributeEntries(entries []Entry, variants []SearchVariant, req SearchRequest) ([]Entry, int) {
 	buckets := make(map[string][]Entry, len(variants))
 	fallback := make([]Entry, 0)
 	seen := make(map[string]struct{}, len(entries))
+	eligibleCount := 0
 
 	for _, entry := range entries {
 		if entry.Title == "" {
 			continue
 		}
-		if minRating > 0 && entry.ReviewRating < minRating {
+		if req.MinRating > 0 && entry.ReviewRating < req.MinRating {
+			continue
+		}
+
+		website := strings.TrimSpace(firstNonEmpty(entry.WebSite, entry.WebsiteAlt))
+		if req.OnlyNoWebsite && website != "" {
+			continue
+		}
+		if req.OnlyWithPhone && strings.TrimSpace(entry.Phone) == "" {
 			continue
 		}
 
@@ -199,6 +210,7 @@ func distributeEntries(entries []Entry, variants []SearchVariant, limit int, min
 			continue
 		}
 		seen[key] = struct{}{}
+		eligibleCount++
 
 		if entry.InputID != "" {
 			buckets[entry.InputID] = append(buckets[entry.InputID], entry)
@@ -207,10 +219,10 @@ func distributeEntries(entries []Entry, variants []SearchVariant, limit int, min
 		}
 	}
 
-	selected := make([]Entry, 0, limit)
+	selected := make([]Entry, 0, req.Limit)
 	positions := make(map[string]int, len(variants))
 
-	for len(selected) < limit {
+	for len(selected) < req.Limit {
 		added := false
 
 		for _, variant := range variants {
@@ -224,7 +236,7 @@ func distributeEntries(entries []Entry, variants []SearchVariant, limit int, min
 			positions[variant.ID] = position + 1
 			added = true
 
-			if len(selected) >= limit {
+			if len(selected) >= req.Limit {
 				break
 			}
 		}
@@ -235,13 +247,13 @@ func distributeEntries(entries []Entry, variants []SearchVariant, limit int, min
 	}
 
 	for _, entry := range fallback {
-		if len(selected) >= limit {
+		if len(selected) >= req.Limit {
 			break
 		}
 		selected = append(selected, entry)
 	}
 
-	return selected
+	return selected, eligibleCount
 }
 
 func parseEntries(path string) ([]Entry, error) {
@@ -390,7 +402,7 @@ func search(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	selectedEntries := distributeEntries(entries, variants, req.Limit, req.MinRating)
+	selectedEntries, eligibleCount := distributeEntries(entries, variants, req)
 	results := make([]Result, 0, len(selectedEntries))
 
 	for _, e := range selectedEntries {
@@ -429,7 +441,8 @@ func search(w http.ResponseWriter, r *http.Request) {
 		"queries":       queryNames,
 		"regionsQueried": len(variants),
 		"searchRound":    req.SearchRound,
-		"uniqueFound":    len(entries),
+		"scannedCount":   len(entries),
+		"matchedCount":   eligibleCount,
 		"partial":        partial,
 		"results":        results,
 	})

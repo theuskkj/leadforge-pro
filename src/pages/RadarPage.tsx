@@ -45,12 +45,19 @@ const nicheSuggestions = [
 
 const RADAR_STATE_KEY = 'leadforge:radar-state:v1'
 
+type SearchMeta = {
+  scannedCount: number
+  matchedCount: number
+  partial: boolean
+}
+
 type PersistedRadarState = {
   params?: Partial<SearchParams>
   results?: LeadSearchResult[]
   showFilters?: boolean
   searched?: boolean
   lastSearchSignature?: string
+  searchMeta?: SearchMeta
 }
 
 function loadRadarState(defaultLimit: number) {
@@ -71,6 +78,7 @@ function loadRadarState(defaultLimit: number) {
         showFilters: false,
         searched: false,
         lastSearchSignature: '',
+        searchMeta: { scannedCount: 0, matchedCount: 0, partial: false },
       }
     }
 
@@ -90,6 +98,7 @@ function loadRadarState(defaultLimit: number) {
       showFilters: Boolean(parsed.showFilters),
       searched: Boolean(parsed.searched),
       lastSearchSignature: typeof parsed.lastSearchSignature === 'string' ? parsed.lastSearchSignature : '',
+      searchMeta: parsed.searchMeta ?? { scannedCount: 0, matchedCount: 0, partial: false },
     }
   } catch {
     return {
@@ -98,6 +107,7 @@ function loadRadarState(defaultLimit: number) {
       showFilters: false,
       searched: false,
       lastSearchSignature: '',
+      searchMeta: { scannedCount: 0, matchedCount: 0, partial: false },
     }
   }
 }
@@ -121,6 +131,7 @@ export function RadarPage() {
   const [showFilters, setShowFilters] = useState(initialRadarState.showFilters)
   const [searched, setSearched] = useState(initialRadarState.searched)
   const [lastSearchSignature, setLastSearchSignature] = useState(initialRadarState.lastSearchSignature)
+  const [searchMeta, setSearchMeta] = useState<SearchMeta>(initialRadarState.searchMeta)
 
   const currentSearchSignature = useMemo(() => JSON.stringify([
     params.country.trim().toLowerCase(),
@@ -132,7 +143,7 @@ export function RadarPage() {
     Boolean(params.onlyWithPhone),
   ]), [params])
 
-  const canContinueSearch = searched && results.length > 0 && lastSearchSignature === currentSearchSignature
+  const canContinueSearch = searched && lastSearchSignature === currentSearchSignature
 
   useEffect(() => {
     const persisted: PersistedRadarState = {
@@ -141,10 +152,11 @@ export function RadarPage() {
       showFilters,
       searched,
       lastSearchSignature,
+      searchMeta,
     }
 
     localStorage.setItem(RADAR_STATE_KEY, JSON.stringify(persisted))
-  }, [params, results, showFilters, searched, lastSearchSignature])
+  }, [params, results, showFilters, searched, lastSearchSignature, searchMeta])
 
   const leadsIndex = useMemo(() => {
     return new Map(
@@ -225,6 +237,11 @@ export function RadarPage() {
 
       setParams((current) => ({ ...current, searchRound: round + 1 }))
       setLastSearchSignature(currentSearchSignature)
+      setSearchMeta({
+        scannedCount: response.scannedCount ?? 0,
+        matchedCount: response.matchedCount ?? response.results.length,
+        partial: Boolean(response.partial),
+      })
 
       if (response.error) toast.error(response.error)
       else if (continuing && response.results.length === 0) toast.info('Nenhuma empresa nova encontrada neste lote. Tente novamente para explorar outra região.')
@@ -314,7 +331,9 @@ export function RadarPage() {
           <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-sm font-medium text-zinc-200">{results.length} empresas encontradas</p>
-              <p className="mt-1 text-xs text-zinc-600">{noWebsiteCount} sem website · ordenadas por oportunidade</p>
+              <p className="mt-1 text-xs text-zinc-600">
+                {noWebsiteCount} sem website · {searchMeta.scannedCount > 0 ? `${searchMeta.scannedCount} analisadas no Maps nesta rodada · ` : ''}ordenadas por oportunidade
+              </p>
             </div>
             <span className="inline-flex w-fit items-center gap-2 rounded-full border border-emerald-400/15 bg-emerald-400/[0.07] px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[.1em] text-emerald-300">
               <Globe2 className="size-3.5" />
@@ -327,8 +346,15 @@ export function RadarPage() {
               <div className="mx-auto grid size-11 place-items-center rounded-2xl border border-white/[0.07] bg-white/[0.035]">
                 <Search className="size-5 text-zinc-600" />
               </div>
-              <p className="mt-4 text-sm font-medium text-zinc-200">Nenhuma empresa encontrada</p>
-              <p className="mx-auto mt-2 max-w-md text-xs leading-5 text-zinc-600">Tente ampliar a região, trocar o nicho ou remover alguns filtros.</p>
+              <p className="mt-4 text-sm font-medium text-zinc-200">Nenhuma empresa encontrada neste lote</p>
+              <p className="mx-auto mt-2 max-w-md text-xs leading-5 text-zinc-600">
+                {searchMeta.scannedCount > 0
+                  ? `O Google Maps retornou ${searchMeta.scannedCount} empresas nesta região, mas nenhuma passou pelos filtros atuais.`
+                  : 'Esta região não retornou empresas para a consulta atual.'}
+              </p>
+              <p className="mx-auto mt-2 max-w-md text-xs leading-5 text-zinc-500">
+                Clique em <strong className="text-zinc-300">Buscar mais empresas</strong> para avançar automaticamente para outra região.
+              </p>
             </Card>
           ) : (
             <div className="mt-4 grid gap-3 xl:grid-cols-2">
