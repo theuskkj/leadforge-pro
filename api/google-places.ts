@@ -18,7 +18,6 @@ type GooglePlace = {
   rating?: number
   userRatingCount?: number
   primaryTypeDisplayName?: { text?: string }
-  googleMapsLinks?: { placeUri?: string }
   location?: { latitude?: number; longitude?: number }
 }
 
@@ -37,7 +36,6 @@ const FIELD_MASK = [
   'places.rating',
   'places.userRatingCount',
   'places.primaryTypeDisplayName',
-  'places.googleMapsLinks',
   'places.location',
   'nextPageToken',
 ].join(',')
