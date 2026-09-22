@@ -7,7 +7,7 @@ import { Checkbox } from '../components/ui/checkbox'
 import { Input } from '../components/ui/input'
 import { Select } from '../components/ui/select'
 import { useAppData } from '../hooks/useAppData'
-import { getGooglePlacesStatus } from '../services/leadSearchService'
+import { getScraperStatus } from '../services/leadSearchService'
 
 export function SettingsPage() {
   const { settings, setSettings, resetLeads } = useAppData()
@@ -15,7 +15,7 @@ export function SettingsPage() {
   const [googleReady, setGoogleReady] = useState<boolean | null>(null)
 
   useEffect(() => {
-    getGooglePlacesStatus().then(setGoogleReady)
+    getScraperStatus().then(setGoogleReady)
   }, [])
 
   return (
@@ -75,13 +75,13 @@ export function SettingsPage() {
               </div>
               <div>
                 <p className="text-[15px] font-semibold text-white">Fonte de dados</p>
-                <p className="mt-1 text-xs leading-5 text-zinc-500">O Radar consulta exclusivamente dados reais do Google Places.</p>
+                <p className="mt-1 text-xs leading-5 text-zinc-500">O Radar consulta exclusivamente dados reais extraídos do Google Maps pelo scraper.</p>
               </div>
             </div>
 
             <div className="mt-4 flex items-center justify-between rounded-2xl border border-white/[0.06] bg-[#0d0e11] p-3.5">
               <div>
-                <p className="text-xs font-medium text-zinc-300">Google Places API</p>
+                <p className="text-xs font-medium text-zinc-300">Google Maps Scraper</p>
                 <p className="mt-1 text-[11px] text-zinc-600">
                   {googleReady === null ? 'Verificando...' : googleReady ? 'Configurada no servidor' : 'Não configurada — pesquisas bloqueadas'}
                 </p>
@@ -95,7 +95,7 @@ export function SettingsPage() {
               <ShieldCheck className="mt-0.5 size-5 shrink-0 text-emerald-400" />
               <div>
                 <p className="text-xs font-medium text-zinc-300">Chave protegida</p>
-                <p className="mt-1 text-[11px] leading-5 text-zinc-600">A chave do Google nunca fica no navegador. Ela é usada somente pela função serverless da Vercel através de <code className="text-zinc-400">GOOGLE_MAPS_API_KEY</code>.</p>
+                <p className="mt-1 text-[11px] leading-5 text-zinc-600">As credenciais do scraper nunca ficam no navegador. A Vercel usa apenas <code className="text-zinc-400">GMAPS_SCRAPER_URL</code> e <code className="text-zinc-400">GMAPS_SCRAPER_API_KEY</code> no servidor.</p>
               </div>
             </div>
           </Card>
