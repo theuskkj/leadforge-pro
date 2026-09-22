@@ -53,7 +53,6 @@ export interface WorkspaceSettings {
   currency: 'BRL'
   defaultPotentialValue: number
   defaultResultLimit: number
-  searchProvider: 'google' | 'mock'
   compactMode: boolean
 }
 
@@ -69,7 +68,6 @@ export interface SearchParams {
 
 export interface SearchResponse {
   results: LeadSearchResult[]
-  isDemo: boolean
-  source: 'google' | 'mock'
+  source: 'google'
   error?: string
 }
