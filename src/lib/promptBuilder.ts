@@ -88,7 +88,7 @@ O entregável deve ser um site convincente, específico para este negócio e pro
 ### Dados verificados que podem ser usados
 ${verifiedContext(input)}
 
-REGRA CRÍTICA: nunca invente avaliações, quantidade de clientes, anos de mercado, certificações, prêmios, cases, endereços, preços, parceiros ou depoimentos. Quando a informação não existir, escreva a seção de forma persuasiva sem fabricar evidência.
+REGRA CRÍTICA: Não invente avaliações, quantidade de clientes, anos de mercado, certificações, prêmios, cases, endereços, preços, parceiros ou depoimentos. Quando a informação não existir, escreva a seção de forma persuasiva sem fabricar evidência.
 
 ## 2. OBJETIVO E ESTRATÉGIA DE CONVERSÃO
 
