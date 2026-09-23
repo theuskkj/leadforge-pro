@@ -1,8 +1,6 @@
 import {
   Area,
   AreaChart,
-  Bar,
-  BarChart,
   CartesianGrid,
   ResponsiveContainer,
   Tooltip,
@@ -15,7 +13,6 @@ import {
   Contact,
   Radar,
   Target,
-  TrendingUp,
   WandSparkles,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
@@ -33,37 +30,7 @@ const stageLabels = {
   fechado: 'Fechados',
 } as const
 
-function MetricCard({
-  label,
-  value,
-  caption,
-  icon: Icon,
-  accent,
-}: {
-  label: string
-  value: string
-  caption: string
-  icon: typeof Radar
-  accent?: boolean
-}) {
-  return (
-    <Card className={`metric-glow pro-card-hover min-h-[148px] p-5 ${accent ? 'border-[#ff304d]/15' : ''}`}>
-      <div className="flex items-start justify-between">
-        <span className={`grid size-9 place-items-center rounded-xl border ${
-          accent
-            ? 'border-[#ff304d]/20 bg-[#ff304d]/[0.08] text-[#ff6378]'
-            : 'border-white/[0.07] bg-white/[0.03] text-zinc-500'
-        }`}>
-          <Icon className="size-4" />
-        </span>
-        <ArrowUpRight className="size-3.5 text-zinc-700" />
-      </div>
-      <p className="mt-5 text-[9px] font-semibold uppercase tracking-[.15em] text-zinc-600">{label}</p>
-      <p className="tabular mt-1.5 text-[26px] font-semibold tracking-[-0.045em] text-zinc-100">{value}</p>
-      <p className="mt-2 text-[10px] text-zinc-600">{caption}</p>
-    </Card>
-  )
-}
+const metricIcons = [Radar, Banknote, Contact, Target]
 
 export function DashboardPage() {
   const { leads } = useAppData()
@@ -73,10 +40,19 @@ export function DashboardPage() {
   const noWebsite = leads.filter((lead) => !lead.website).length
   const priorityLeads = [...leads].sort((a, b) => b.priority - a.priority).slice(0, 6)
 
+  const metrics = [
+    { label: 'Base de leads', value: String(leads.length), caption: `${noWebsite} sem website identificado` },
+    { label: 'Pipeline aberto', value: formatCurrency(revenue), caption: 'Valor potencial não fechado' },
+    { label: 'Contatos iniciados', value: String(contacted), caption: `${Math.max(0, leads.length - contacted)} aguardando abordagem` },
+    { label: 'Taxa de avanço', value: `${advanceRate}%`, caption: 'Leads além do estágio inicial' },
+  ]
+
   const stageData = (['novo', 'contatado', 'proposta', 'fechado'] as const).map((stage) => ({
-    stage: stageLabels[stage],
+    stage,
+    label: stageLabels[stage],
     total: leads.filter((lead) => lead.stage === stage).length,
   }))
+  const maxStage = Math.max(1, ...stageData.map((item) => item.total))
 
   const now = new Date()
   const trendData = Array.from({ length: 7 }).map((_, index) => {
@@ -92,7 +68,7 @@ export function DashboardPage() {
       <PageHeader
         eyebrow="Command center"
         title="Painel de operação"
-        subtitle="Leads, pipeline e criação de propostas em uma visão objetiva para decidir o próximo movimento comercial."
+        subtitle="Veja o que exige ação agora, acompanhe o funil e avance as melhores oportunidades."
         actions={
           <>
             <Link to="/prompt-generator">
@@ -105,109 +81,112 @@ export function DashboardPage() {
         }
       />
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <MetricCard label="Base de leads" value={String(leads.length)} caption={`${noWebsite} sem website identificado`} icon={Radar} accent />
-        <MetricCard label="Pipeline aberto" value={formatCurrency(revenue)} caption="Valor potencial não fechado" icon={Banknote} />
-        <MetricCard label="Contatos iniciados" value={String(contacted)} caption={`${Math.max(0, leads.length - contacted)} aguardando abordagem`} icon={Contact} />
-        <MetricCard label="Taxa de avanço" value={`${advanceRate}%`} caption="Leads além do estágio inicial" icon={Target} />
-      </div>
-
-      <div className="mt-3 grid gap-3 xl:grid-cols-[1.35fr_.9fr]">
-        <Card className="min-h-[370px]">
-          <div className="mb-6 flex items-start justify-between gap-4">
-            <div>
-              <p className="text-[13px] font-semibold text-zinc-100">Aquisição de leads</p>
-              <p className="mt-1 text-[10px] text-zinc-600">Novas oportunidades adicionadas nos últimos 7 dias</p>
-            </div>
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/15 bg-emerald-400/[0.06] px-2.5 py-1 text-[9px] font-semibold text-emerald-300">
-              <TrendingUp className="size-3" />
-              Dados reais
-            </span>
-          </div>
-
-          <div className="h-[275px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={trendData} margin={{ left: -20, right: 4 }}>
-                <defs>
-                  <linearGradient id="leadAreaV2" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#ff304d" stopOpacity={0.22} />
-                    <stop offset="100%" stopColor="#ff304d" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid vertical={false} stroke="rgba(255,255,255,.035)" />
-                <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: '#5f6879', fontSize: 10 }} />
-                <YAxis allowDecimals={false} axisLine={false} tickLine={false} tick={{ fill: '#5f6879', fontSize: 10 }} />
-                <Tooltip
-                  contentStyle={{ background: '#0d1117', border: '1px solid rgba(255,255,255,.08)', borderRadius: 12, fontSize: 11 }}
-                  cursor={{ stroke: 'rgba(255,48,77,.15)' }}
-                />
-                <Area type="monotone" dataKey="leads" stroke="#ff304d" strokeWidth={2} fill="url(#leadAreaV2)" dot={false} activeDot={{ r: 4, fill: '#ff304d', stroke: '#0d1117', strokeWidth: 3 }} />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </Card>
-
-        <Card>
-          <div className="mb-5">
-            <p className="text-[13px] font-semibold text-zinc-100">Distribuição do pipeline</p>
-            <p className="mt-1 text-[10px] text-zinc-600">Quantidade de leads por estágio</p>
-          </div>
-
-          <div className="h-[220px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={stageData} margin={{ left: -24 }}>
-                <CartesianGrid vertical={false} stroke="rgba(255,255,255,.03)" />
-                <XAxis dataKey="stage" axisLine={false} tickLine={false} tick={{ fill: '#5f6879', fontSize: 9 }} />
-                <YAxis allowDecimals={false} axisLine={false} tickLine={false} tick={{ fill: '#5f6879', fontSize: 9 }} />
-                <Tooltip contentStyle={{ background: '#0d1117', border: '1px solid rgba(255,255,255,.08)', borderRadius: 12, fontSize: 11 }} cursor={false} />
-                <Bar dataKey="total" fill="#ff304d" radius={[6, 6, 2, 2]} maxBarSize={34} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-
-          <div className="mt-4 grid grid-cols-2 gap-2">
-            {stageData.map((item) => (
-              <div key={item.stage} className="rounded-xl border border-white/[0.055] bg-white/[0.02] px-3 py-2.5">
-                <p className="text-[9px] text-zinc-600">{item.stage}</p>
-                <p className="tabular mt-1 text-sm font-semibold text-zinc-300">{item.total}</p>
+      <Card className="overflow-hidden p-0">
+        <div className="grid divide-y divide-white/[0.055] sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
+          {metrics.map((metric, index) => {
+            const Icon = metricIcons[index]
+            return (
+              <div key={metric.label} className="min-w-0 p-4 sm:p-5">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-[8px] font-semibold uppercase tracking-[.15em] text-zinc-600">{metric.label}</p>
+                  <Icon className={`size-3.5 ${index === 0 ? 'text-[#ef5269]' : 'text-zinc-700'}`} />
+                </div>
+                <p className="tabular mt-3 truncate text-[24px] font-semibold tracking-[-0.04em] text-zinc-100">{metric.value}</p>
+                <p className="mt-1.5 text-[9px] leading-4 text-zinc-600">{metric.caption}</p>
               </div>
-            ))}
+            )
+          })}
+        </div>
+      </Card>
+
+      <div className="mt-3 grid gap-3 xl:grid-cols-[1.25fr_.75fr]">
+        <Card className="min-h-[388px]">
+          <div className="flex flex-col gap-6 lg:flex-row">
+            <div className="min-w-0 flex-1">
+              <div className="mb-5">
+                <p className="text-[12px] font-semibold text-zinc-100">Aquisição nos últimos 7 dias</p>
+                <p className="mt-1 text-[9px] text-zinc-600">Novos leads adicionados à base por dia</p>
+              </div>
+              <div className="h-[245px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={trendData} margin={{ left: -20, right: 4 }}>
+                    <defs>
+                      <linearGradient id="leadAreaOperational" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#d92d46" stopOpacity={0.18} />
+                        <stop offset="100%" stopColor="#d92d46" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid vertical={false} stroke="rgba(255,255,255,.035)" />
+                    <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: '#6c7583', fontSize: 9 }} />
+                    <YAxis allowDecimals={false} axisLine={false} tickLine={false} tick={{ fill: '#6c7583', fontSize: 9 }} />
+                    <Tooltip
+                      contentStyle={{ background: '#0d1014', border: '1px solid #2a313a', borderRadius: 9, fontSize: 10 }}
+                      cursor={{ stroke: 'rgba(217,45,70,.16)' }}
+                    />
+                    <Area type="monotone" dataKey="leads" stroke="#d92d46" strokeWidth={2} fill="url(#leadAreaOperational)" dot={false} activeDot={{ r: 4, fill: '#d92d46', stroke: '#08090c', strokeWidth: 3 }} />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            <div className="w-full border-t border-white/[0.055] pt-5 lg:w-[240px] lg:border-l lg:border-t-0 lg:pl-5 lg:pt-0">
+              <p className="text-[8px] font-semibold uppercase tracking-[.14em] text-zinc-600">Pipeline por estágio</p>
+              <div className="mt-4 space-y-4">
+                {stageData.map((item) => (
+                  <div key={item.stage}>
+                    <div className="flex items-center justify-between gap-3 text-[10px]">
+                      <span className="text-zinc-500">{item.label}</span>
+                      <span className="tabular font-semibold text-zinc-300">{item.total}</span>
+                    </div>
+                    <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/[0.04]">
+                      <div
+                        className="h-full rounded-full bg-[#d92d46]"
+                        style={{ width: `${Math.max(4, (item.total / maxStage) * 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </Card>
+
+        <Card className="p-0">
+          <div className="border-b border-white/[0.055] px-5 py-4">
+            <div className="flex items-end justify-between gap-3">
+              <div>
+                <p className="text-[12px] font-semibold text-zinc-100">Fila de prioridade</p>
+                <p className="mt-1 text-[9px] text-zinc-600">Próximas oportunidades para abordagem</p>
+              </div>
+              <Link to="/leads" className="text-[9px] font-semibold text-[#ef5269] hover:text-[#ff7588]">Ver base</Link>
+            </div>
+          </div>
+
+          {priorityLeads.length ? (
+            <div className="divide-y divide-white/[0.05]">
+              {priorityLeads.map((lead) => (
+                <Link key={lead.id} to={`/lead/${lead.id}`} className="group flex items-center gap-3 px-5 py-3.5 hover:bg-white/[0.018]">
+                  <div className="grid size-8 shrink-0 place-items-center rounded-[8px] border border-[#2a313a] bg-[#14181e] text-[9px] font-semibold text-zinc-400">
+                    {initials(lead.name)}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[11px] font-semibold text-zinc-200 group-hover:text-white">{lead.name}</p>
+                    <p className="mt-1 truncate text-[8px] text-zinc-600">{lead.niche} · {lead.city}</p>
+                  </div>
+                  <div className="hidden sm:block"><StageBadge stage={lead.stage} /></div>
+                  <PriorityBadge priority={lead.priority} />
+                  <ArrowUpRight className="size-3.5 text-zinc-700 group-hover:text-zinc-400" />
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <div className="px-5 py-12 text-center">
+              <p className="text-[10px] font-medium text-zinc-500">Nenhum lead salvo ainda.</p>
+              <p className="mt-1 text-[9px] text-zinc-700">Abra o Radar para iniciar sua fila de prospecção.</p>
+            </div>
+          )}
+        </Card>
       </div>
-
-      <Card className="mt-3">
-        <div className="mb-4 flex items-center justify-between gap-4">
-          <div>
-            <p className="text-[13px] font-semibold text-zinc-100">Fila de prioridade</p>
-            <p className="mt-1 text-[10px] text-zinc-600">Oportunidades com maior score para ação comercial</p>
-          </div>
-          <Link to="/leads" className="text-[10px] font-semibold text-[#ff6378] transition hover:text-[#ff8292]">Ver base completa</Link>
-        </div>
-
-        {priorityLeads.length ? (
-          <div className="divide-y divide-white/[0.05]">
-            {priorityLeads.map((lead) => (
-              <Link key={lead.id} to={`/lead/${lead.id}`} className="group flex items-center gap-3 py-3.5 first:pt-0 last:pb-0">
-                <div className="grid size-9 shrink-0 place-items-center rounded-lg border border-white/[0.07] bg-white/[0.035] text-[10px] font-semibold text-zinc-400">
-                  {initials(lead.name)}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-[12px] font-semibold text-zinc-200 group-hover:text-white">{lead.name}</p>
-                  <p className="mt-1 truncate text-[9px] text-zinc-600">{lead.niche} · {lead.city}</p>
-                </div>
-                <div className="hidden sm:block"><StageBadge stage={lead.stage} /></div>
-                <PriorityBadge priority={lead.priority} />
-                <ArrowUpRight className="size-3.5 text-zinc-700 transition group-hover:text-zinc-400" />
-              </Link>
-            ))}
-          </div>
-        ) : (
-          <div className="rounded-xl border border-dashed border-white/[0.07] py-10 text-center text-[10px] text-zinc-600">
-            Nenhum lead salvo ainda. Use o Radar para começar.
-          </div>
-        )}
-      </Card>
     </>
   )
 }
