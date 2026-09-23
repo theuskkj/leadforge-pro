@@ -11,6 +11,7 @@ const buttonVariants = cva(
         ghost: 'border border-transparent bg-transparent text-zinc-400 hover:bg-white/[0.045] hover:text-white',
         secondary: 'border border-white/[0.08] bg-white/[0.045] text-zinc-100 shadow-[inset_0_1px_0_rgba(255,255,255,.025)] hover:border-white/[0.13] hover:bg-white/[0.07]',
         outline: 'border border-white/[0.10] bg-[#0b0e13]/75 text-zinc-200 hover:border-[#ff304d]/32 hover:bg-[#ff304d]/[0.055] hover:text-white',
+        success: 'border border-[#25D366]/55 bg-[#25D366] text-[#06190d] shadow-[0_8px_24px_rgba(37,211,102,.12)] hover:border-[#48df80] hover:bg-[#3bda73] hover:shadow-[0_10px_30px_rgba(37,211,102,.18)]',
       },
     },
     defaultVariants: { variant: 'default' },
