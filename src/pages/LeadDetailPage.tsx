@@ -1,6 +1,6 @@
 import {
-  Clipboard,
   ArrowRight,
+  Clipboard,
   ExternalLink,
   MapPin,
   MessageCircle,
@@ -40,7 +40,6 @@ export function LeadDetailPage() {
       toast.error('Este lead não possui telefone para contato no WhatsApp.')
       return
     }
-
     window.open(whatsappLink, '_blank', 'noopener,noreferrer')
   }
 
@@ -51,55 +50,53 @@ export function LeadDetailPage() {
         title={lead.name}
         subtitle={`${lead.niche} · ${lead.city}`}
         actions={
-          <>
-            <Link
-              to="/prompt-generator"
-              state={{
-                prefill: {
-                  companyName: lead.name,
-                  niche: lead.niche,
-                  city: lead.city,
-                  description: lead.notes || `Empresa local de ${lead.niche} em ${lead.city}.`,
-                  targetAudience: `Pessoas e empresas de ${lead.city} buscando ${lead.niche}.`,
-                  services: lead.niche,
-                  siteGoal: 'Gerar contatos qualificados e pedidos de orçamento',
-                  visualStyle: 'Premium, contemporâneo e confiável',
-                  colors: '#0b0e13, #ff304d, #f7f8fb',
-                  cta: lead.phone ? 'Falar no WhatsApp' : 'Solicitar orçamento',
-                  verifiedAddress: lead.address,
-                  verifiedPhone: lead.phone,
-                  verifiedRating: lead.rating,
-                  verifiedReviewCount: lead.reviewCount,
-                },
-              }}
-            >
-              <Button><WandSparkles className="size-4" />Criar website brief</Button>
-            </Link>
-          </>
+          <Link
+            to="/prompt-generator"
+            state={{
+              prefill: {
+                companyName: lead.name,
+                niche: lead.niche,
+                city: lead.city,
+                description: lead.notes || `Empresa local de ${lead.niche} em ${lead.city}.`,
+                targetAudience: `Pessoas e empresas de ${lead.city} buscando ${lead.niche}.`,
+                services: lead.niche,
+                siteGoal: 'Gerar contatos qualificados e pedidos de orçamento',
+                visualStyle: 'Autoral, claro, confiável e adequado ao segmento',
+                colors: '#08090c, #d92d46, #f7f8fb',
+                cta: lead.phone ? 'Falar no WhatsApp' : 'Solicitar orçamento',
+                verifiedAddress: lead.address,
+                verifiedPhone: lead.phone,
+                verifiedRating: lead.rating,
+                verifiedReviewCount: lead.reviewCount,
+              },
+            }}
+          >
+            <Button><WandSparkles className="size-4" />Criar website brief</Button>
+          </Link>
         }
       />
 
-      <div className="grid gap-4 xl:grid-cols-[1.18fr_.82fr]">
-        <div className="space-y-4">
-          <Card>
-            <div className="flex flex-wrap gap-2">
+      <div className="grid gap-3 xl:grid-cols-[1.28fr_.72fr]">
+        <div className="space-y-3">
+          <Card className="p-0">
+            <div className="flex flex-wrap items-center gap-2 border-b border-white/[0.055] px-5 py-4">
               <WebsiteBadge hasWebsite={Boolean(lead.website)} />
               <PriorityBadge priority={lead.priority} />
               <StageBadge stage={lead.stage} />
             </div>
 
-            <div className="mt-6 grid gap-3 sm:grid-cols-2">
-              <div className="rounded-xl border border-white/[0.055] bg-white/[0.02] p-3.5">
-                <p className="text-[9px] uppercase tracking-[.14em] text-zinc-600">Valor potencial</p>
-                <p className="tabular mt-2 text-xl font-semibold tracking-[-0.03em] text-white">{formatCurrency(lead.potentialValue)}</p>
+            <div className="grid divide-y divide-white/[0.055] sm:grid-cols-2 sm:divide-x sm:divide-y-0">
+              <div className="px-5 py-4">
+                <p className="text-[8px] font-semibold uppercase tracking-[.14em] text-zinc-600">Valor potencial</p>
+                <p className="tabular mt-2 text-[22px] font-semibold tracking-[-0.035em] text-white">{formatCurrency(lead.potentialValue)}</p>
               </div>
-              <div className="rounded-xl border border-white/[0.055] bg-white/[0.02] p-3.5">
-                <p className="text-[9px] uppercase tracking-[.14em] text-zinc-600">Último contato</p>
-                <p className="mt-2 text-[12px] font-semibold text-zinc-300">{formatDate(lead.lastContact)}</p>
+              <div className="px-5 py-4">
+                <p className="text-[8px] font-semibold uppercase tracking-[.14em] text-zinc-600">Último contato</p>
+                <p className="mt-2 text-[11px] font-semibold text-zinc-300">{formatDate(lead.lastContact)}</p>
               </div>
             </div>
 
-            <div className="mt-5 space-y-3 border-t border-white/[0.05] pt-5 text-[11px] text-zinc-500">
+            <div className="space-y-3 border-t border-white/[0.055] px-5 py-4 text-[10px] text-zinc-500">
               <p className="flex items-start gap-2.5">
                 <MapPin className="mt-0.5 size-3.5 shrink-0 text-zinc-700" />
                 <span>{lead.address}</span>
@@ -114,30 +111,40 @@ export function LeadDetailPage() {
               </p>
             </div>
 
-            <div className="mt-5 flex flex-col gap-3 border-t border-white/[0.05] pt-5 sm:flex-row sm:items-center">
-              <div className="flex flex-1 flex-wrap gap-2">
+            <div className="border-t border-white/[0.055] bg-[#0b0e12] px-5 py-4">
+              <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+                <div>
+                  <p className="text-[9px] font-semibold uppercase tracking-[.14em] text-emerald-300">Contato direto</p>
+                  <p className="mt-1.5 max-w-3xl text-[10px] leading-5 text-zinc-500">
+                    {whatsappLink
+                      ? whatsappMessage
+                      : 'Este lead não possui telefone disponível para abrir uma conversa no WhatsApp.'}
+                  </p>
+                </div>
                 <Button
                   variant={whatsappLink ? 'success' : 'secondary'}
-                  className="w-full sm:w-auto"
+                  className="w-full lg:w-auto"
                   onClick={openWhatsApp}
-                  title={whatsappLink ? 'Abrir WhatsApp com uma mensagem de abordagem pronta' : 'Telefone não informado'}
+                  disabled={!whatsappLink}
                 >
                   <MessageCircle className="size-4" />
-                  {whatsappLink ? 'Falar no WhatsApp' : 'WhatsApp indisponível'}
+                  {whatsappLink ? 'Abrir WhatsApp' : 'WhatsApp indisponível'}
                 </Button>
+              </div>
+            </div>
 
+            <div className="flex flex-col gap-3 border-t border-white/[0.055] px-5 py-4 sm:flex-row sm:items-center">
+              <div className="flex flex-1 flex-wrap gap-2">
                 <Button variant="outline" onClick={() => window.open(mapsUrl(lead.name, lead.address), '_blank', 'noopener,noreferrer')}>
                   <MapPin className="size-4" />
                   Google Maps
                 </Button>
-
                 {lead.website ? (
                   <Button variant="outline" onClick={() => window.open(lead.website, '_blank', 'noopener,noreferrer')}>
                     <ExternalLink className="size-4" />
                     Site atual
                   </Button>
                 ) : null}
-
                 <Button
                   variant="secondary"
                   onClick={() => moveLeadStage(lead.id, lead.stage === 'novo' ? 'contatado' : lead.stage === 'contatado' ? 'proposta' : 'fechado')}
@@ -163,34 +170,34 @@ export function LeadDetailPage() {
             </div>
           </Card>
 
-          <Card>
-            <div className="mb-4">
-              <p className="text-sm font-semibold text-white">Histórico de atividades</p>
-              <p className="mt-1 text-[10px] text-zinc-600">Registro cronológico das ações do lead.</p>
+          <Card className="p-0">
+            <div className="border-b border-white/[0.055] px-5 py-4">
+              <p className="text-[12px] font-semibold text-white">Histórico de atividades</p>
+              <p className="mt-1 text-[9px] text-zinc-600">Registro cronológico das ações do lead.</p>
             </div>
-            <div className="space-y-2">
+            <div className="divide-y divide-white/[0.05]">
               {lead.activities.slice().reverse().map((activity) => (
-                <div key={activity.id} className="flex items-start justify-between gap-4 rounded-xl border border-white/[0.055] bg-white/[0.018] p-3">
+                <div key={activity.id} className="flex items-start justify-between gap-4 px-5 py-3.5">
                   <p className="text-[10px] leading-5 text-zinc-400">{activity.description}</p>
-                  <p className="shrink-0 text-[9px] text-zinc-700">{formatDate(activity.createdAt)}</p>
+                  <p className="shrink-0 text-[8px] text-zinc-700">{formatDate(activity.createdAt)}</p>
                 </div>
               ))}
             </div>
           </Card>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-3">
           <Card>
-            <p className="text-sm font-semibold text-white">Notas comerciais</p>
-            <p className="mt-1 text-[10px] text-zinc-600">Contexto útil para abordagem e follow-up.</p>
+            <p className="text-[12px] font-semibold text-white">Notas comerciais</p>
+            <p className="mt-1 text-[9px] text-zinc-600">Contexto útil para abordagem e follow-up.</p>
             <Textarea className="mt-4 min-h-40" value={lead.notes} onChange={(event) => patchLead(lead.id, { notes: event.target.value })} />
           </Card>
 
           <Card>
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="text-sm font-semibold text-white">Prompt salvo</p>
-                <p className="mt-1 text-[10px] text-zinc-600">Briefing de website vinculado a este lead.</p>
+                <p className="text-[12px] font-semibold text-white">Prompt salvo</p>
+                <p className="mt-1 text-[9px] text-zinc-600">Briefing de website vinculado a este lead.</p>
               </div>
               <Button variant="ghost" className="size-9 px-0" onClick={async () => {
                 if (!lead.prompt) {

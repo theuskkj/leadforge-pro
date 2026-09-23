@@ -102,7 +102,20 @@ problema/intenção → proposta de valor → serviços → diferenciais → pro
 
 O CTA principal deve aparecer no hero, depois das seções de maior intenção e novamente no fechamento. Em mobile, considere CTA persistente discreto quando fizer sentido.
 
-## 3. ARQUITETURA DE CONTEÚDO OBRIGATÓRIA
+## 3. CONTRATO VISUAL ANTES DE IMPLEMENTAR
+
+Antes de codificar, defina em poucas linhas um contrato visual específico para este projeto:
+
+- **Tarefa e hierarquia:** o que o visitante precisa entender primeiro e qual ação deve ser mais fácil.
+- **Direção:** 2 ou 3 atributos ligados ao segmento e como eles afetam tipografia, composição, imagens e densidade.
+- **Sistema:** papéis de cor, contraste, espaçamento, raio e superfícies. Concentre a cor de ação; não use cromatismo decorativo em tudo.
+- **Assinatura:** escolha no máximo um recurso visual característico que faça sentido para a marca sem esconder controles reconhecíveis.
+- **Adaptação:** descreva como o layout reorganiza conteúdo em mobile e com textos longos.
+- **Comportamento e prova:** liste estados relevantes (hover, foco, carregando, vazio, erro e sucesso) e o que será verificado antes de considerar pronto.
+
+Não transforme automaticamente toda seção em card. Relações que pedem comparação devem manter alinhamento; sequências devem preservar ordem; conteúdo operacional deve priorizar clareza e feedback.
+
+## 4. ARQUITETURA DE CONTEÚDO OBRIGATÓRIA
 
 Monte a experiência com esta hierarquia, adaptando o texto ao negócio:
 
@@ -155,7 +168,7 @@ Monte a experiência com esta hierarquia, adaptando o texto ao negócio:
     - contato, localização, links essenciais e identificação da empresa;
     - não criar CNPJ, redes sociais ou dados que não foram fornecidos.
 
-## 4. COPYWRITING
+## 5. COPYWRITING
 
 - Escreva toda a copy final em português do Brasil.
 - Não use Lorem Ipsum.
@@ -166,7 +179,7 @@ Monte a experiência com esta hierarquia, adaptando o texto ao negócio:
 - Inclua microcopy nos CTAs e formulários para reduzir incerteza.
 - Use urgência apenas quando houver justificativa real; não crie escassez falsa.
 
-## 5. DIREÇÃO VISUAL
+## 6. DIREÇÃO VISUAL
 
 **Estilo desejado:** ${valueOrFallback(input.visualStyle, 'premium, contemporâneo, limpo e confiável')}
 **Paleta/base:** ${valueOrFallback(input.colors, 'defina uma paleta coerente com o segmento e alto contraste')}
@@ -184,7 +197,7 @@ Requisitos visuais:
 - animações curtas e funcionais, sem atrapalhar leitura;
 - layout mobile tão bem resolvido quanto desktop.
 
-## 6. SEO LOCAL E CONTEÚDO
+## 7. SEO LOCAL E CONTEÚDO
 
 Palavras-chave prioritárias:
 ${seo}
@@ -199,7 +212,7 @@ Implemente:
 - JSON-LD do tipo LocalBusiness/ProfessionalService somente com dados realmente disponíveis;
 - NAP consistente quando houver nome, endereço e telefone verificados.
 
-## 7. FUNCIONALIDADES
+## 8. FUNCIONALIDADES
 
 Integrações/requisitos:
 ${integrations}
@@ -215,7 +228,7 @@ Formulários:
 - feedback visual após envio;
 - proteção básica contra estados inválidos.
 
-## 8. IMPLEMENTAÇÃO TÉCNICA
+## 9. IMPLEMENTAÇÃO TÉCNICA
 
 **Alvo de implementação:** ${implementation}
 **Requisitos adicionais:** ${technical}
@@ -232,7 +245,7 @@ Obrigatório:
 - não carregar bibliotecas pesadas sem necessidade;
 - código organizado e fácil de manter.
 
-## 9. CRITÉRIO DE QUALIDADE FINAL
+## 10. CRITÉRIO DE QUALIDADE FINAL
 
 Antes de considerar pronto, revise se:
 - o hero explica o negócio em até 5 segundos;
@@ -243,7 +256,10 @@ Antes de considerar pronto, revise se:
 - os CTAs são consistentes;
 - o conteúdo local está natural;
 - o design tem acabamento profissional;
-- não existem textos placeholder, links falsos ou seções vazias.
+- não existem textos placeholder, links falsos ou seções vazias;
+- a ação principal funciona por teclado e possui foco visível;
+- estados de carregamento, vazio e erro não são confundidos entre si;
+- a interface foi revisada em viewport ampla e estreita, com atenção a textos longos e quebra de layout.
 
 Entregue o website completo, com copy final, estrutura visual final e interações essenciais implementadas. Não responda apenas com recomendações: **construa o site**.`
 }

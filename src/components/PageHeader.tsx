@@ -12,18 +12,15 @@ export function PageHeader({
   actions?: ReactNode
 }) {
   return (
-    <div className="mb-7 flex flex-col gap-5 border-b border-white/[0.05] pb-6 lg:flex-row lg:items-end lg:justify-between">
-      <div className="max-w-3xl">
+    <header className="mb-6 flex flex-col gap-5 border-b border-white/[0.055] pb-5 lg:flex-row lg:items-end lg:justify-between">
+      <div className="min-w-0 max-w-3xl">
         {eyebrow ? (
-          <div className="mb-3 flex items-center gap-2">
-            <span className="h-px w-5 bg-[#ff304d]" />
-            <p className="text-[9px] font-semibold uppercase tracking-[.2em] text-[#ff6378]">{eyebrow}</p>
-          </div>
+          <p className="operational-kicker mb-2.5 text-[8px] font-semibold text-[#ef5269]">{eyebrow}</p>
         ) : null}
-        <h1 className="text-[30px] font-semibold tracking-[-0.045em] text-[#f7f8fb] sm:text-[34px]">{title}</h1>
-        {subtitle ? <p className="mt-2.5 max-w-2xl text-[13px] leading-6 text-zinc-500">{subtitle}</p> : null}
+        <h1 className="text-[29px] font-semibold tracking-[-0.04em] text-[#f7f8fb] sm:text-[33px]">{title}</h1>
+        {subtitle ? <p className="mt-2 max-w-2xl text-[12px] leading-5 text-[#7f8896]">{subtitle}</p> : null}
       </div>
       {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
-    </div>
+    </header>
   )
 }
