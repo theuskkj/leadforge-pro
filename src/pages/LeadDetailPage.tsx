@@ -1,9 +1,10 @@
 import {
   Clipboard,
+  ArrowRight,
   ExternalLink,
   MapPin,
+  MessageCircle,
   Phone,
-  PhoneCall,
   Star,
   Trash2,
   WandSparkles,
@@ -16,7 +17,7 @@ import { Button } from '../components/ui/button'
 import { Card } from '../components/ui/card'
 import { Textarea } from '../components/ui/textarea'
 import { useAppData } from '../hooks/useAppData'
-import { formatCurrency, formatDate, mapsUrl } from '../lib/utils'
+import { buildWhatsAppApproach, formatCurrency, formatDate, mapsUrl, whatsappUrl } from '../lib/utils'
 
 export function LeadDetailPage() {
   const { id } = useParams()
@@ -26,6 +27,23 @@ export function LeadDetailPage() {
 
   if (!lead) return <Navigate to="/leads" replace />
 
+  const whatsappMessage = buildWhatsAppApproach({
+    companyName: lead.name,
+    niche: lead.niche,
+    city: lead.city,
+    hasWebsite: Boolean(lead.website),
+  })
+  const whatsappLink = lead.phone ? whatsappUrl(lead.phone, whatsappMessage) : ''
+
+  function openWhatsApp() {
+    if (!whatsappLink) {
+      toast.error('Este lead não possui telefone para contato no WhatsApp.')
+      return
+    }
+
+    window.open(whatsappLink, '_blank', 'noopener,noreferrer')
+  }
+
   return (
     <>
       <PageHeader
@@ -34,13 +52,6 @@ export function LeadDetailPage() {
         subtitle={`${lead.niche} · ${lead.city}`}
         actions={
           <>
-            <Button variant="secondary" onClick={() => {
-              patchLead(lead.id, { lastContact: new Date().toISOString() })
-              toast.success('Contato marcado')
-            }}>
-              <PhoneCall className="size-4" />
-              Marcar contato
-            </Button>
             <Link
               to="/prompt-generator"
               state={{
@@ -103,29 +114,49 @@ export function LeadDetailPage() {
               </p>
             </div>
 
-            <div className="mt-5 flex flex-wrap gap-2 border-t border-white/[0.05] pt-5">
-              <Button variant="outline" onClick={() => window.open(mapsUrl(lead.name, lead.address), '_blank')}>
-                <ExternalLink className="size-4" />
-                Google Maps
-              </Button>
-              {lead.website ? (
-                <Button variant="outline" onClick={() => window.open(lead.website, '_blank')}>
-                  <ExternalLink className="size-4" />
-                  Site atual
+            <div className="mt-5 flex flex-col gap-3 border-t border-white/[0.05] pt-5 sm:flex-row sm:items-center">
+              <div className="flex flex-1 flex-wrap gap-2">
+                <Button
+                  variant={whatsappLink ? 'success' : 'secondary'}
+                  className="w-full sm:w-auto"
+                  onClick={openWhatsApp}
+                  title={whatsappLink ? 'Abrir WhatsApp com uma mensagem de abordagem pronta' : 'Telefone não informado'}
+                >
+                  <MessageCircle className="size-4" />
+                  {whatsappLink ? 'Falar no WhatsApp' : 'WhatsApp indisponível'}
                 </Button>
-              ) : null}
+
+                <Button variant="outline" onClick={() => window.open(mapsUrl(lead.name, lead.address), '_blank', 'noopener,noreferrer')}>
+                  <MapPin className="size-4" />
+                  Google Maps
+                </Button>
+
+                {lead.website ? (
+                  <Button variant="outline" onClick={() => window.open(lead.website, '_blank', 'noopener,noreferrer')}>
+                    <ExternalLink className="size-4" />
+                    Site atual
+                  </Button>
+                ) : null}
+
+                <Button
+                  variant="secondary"
+                  onClick={() => moveLeadStage(lead.id, lead.stage === 'novo' ? 'contatado' : lead.stage === 'contatado' ? 'proposta' : 'fechado')}
+                >
+                  <ArrowRight className="size-4" />
+                  Avançar estágio
+                </Button>
+              </div>
+
               <Button
-                variant="secondary"
-                onClick={() => moveLeadStage(lead.id, lead.stage === 'novo' ? 'contatado' : lead.stage === 'contatado' ? 'proposta' : 'fechado')}
+                variant="ghost"
+                className="self-start text-zinc-600 hover:bg-red-400/[0.06] hover:text-red-300 sm:ml-auto sm:self-auto"
+                onClick={() => {
+                  if (confirm(`Excluir ${lead.name}?`)) {
+                    removeLead(lead.id)
+                    navigate('/leads')
+                  }
+                }}
               >
-                Avançar estágio
-              </Button>
-              <Button variant="ghost" className="ml-auto text-zinc-600 hover:text-red-300" onClick={() => {
-                if (confirm(`Excluir ${lead.name}?`)) {
-                  removeLead(lead.id)
-                  navigate('/leads')
-                }
-              }}>
                 <Trash2 className="size-4" />
                 Excluir
               </Button>
