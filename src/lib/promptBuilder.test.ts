@@ -38,7 +38,7 @@ describe('buildWebsitePrompt', () => {
     expect(prompt).toContain('SEO LOCAL')
     expect(prompt).toContain('React + TypeScript + Tailwind')
     expect(prompt).toContain('4.8/5 com 120 avaliações')
-    expect(prompt).toContain('nunca invente')
+    expect(prompt).toContain('Não invente avaliações')
   })
 
   it('inclui regras para evitar conteúdo fictício', () => {
