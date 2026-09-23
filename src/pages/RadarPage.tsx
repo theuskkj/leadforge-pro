@@ -418,8 +418,31 @@ export function RadarPage() {
                         navigate(`/lead/${lead.id}`)
                       }}>Detalhes</Button>
                       <a href={mapLink} target="_blank" rel="noreferrer"><Button variant="outline"><MapPinned className="size-4" />Maps</Button></a>
-                      <Button variant="ghost" onClick={() => navigate('/prompt-generator', { state: { prefill: { companyName: item.name, niche: item.niche, city: item.city, description: `Empresa encontrada no radar em ${item.city}.`, targetAudience: '', services: item.niche, siteGoal: 'Gerar contatos qualificados', visualStyle: 'Premium e confiável', colors: '#070708, #ff2438', cta: 'Solicitar orçamento' } } })}>
-                        <WandSparkles className="size-4" />Gerar site
+                      <Button variant="ghost" onClick={() => navigate('/prompt-generator', {
+                        state: {
+                          prefill: {
+                            companyName: item.name,
+                            niche: item.niche,
+                            city: item.city,
+                            description: `Empresa local de ${item.niche} encontrada no Google Maps em ${item.city}.`,
+                            targetAudience: `Pessoas e empresas de ${item.city} buscando ${item.niche} com intenção de contratar.`,
+                            services: item.niche,
+                            siteGoal: 'Gerar contatos qualificados e pedidos de orçamento',
+                            visualStyle: 'Premium, contemporâneo, limpo e confiável',
+                            colors: '#0b0e13, #ff304d, #f7f8fb',
+                            cta: item.phone ? 'Falar no WhatsApp' : 'Solicitar orçamento',
+                            verifiedAddress: item.address,
+                            verifiedPhone: item.phone,
+                            verifiedRating: item.rating,
+                            verifiedReviewCount: item.reviewCount,
+                            trustSignals: item.rating > 0
+                              ? `Avaliação pública de ${item.rating.toFixed(1)}/5 com ${item.reviewCount} avaliações, se exibida exatamente como verificada.`
+                              : '',
+                            seoKeywords: `${item.niche} em ${item.city}; ${item.name}; ${item.niche} ${item.city}`,
+                          },
+                        },
+                      })}>
+                        <WandSparkles className="size-4" />Criar website brief
                       </Button>
                       {item.website ? <a href={item.website} target="_blank" rel="noreferrer" className="ml-auto"><Button variant="ghost"><ExternalLink className="size-4" />Site</Button></a> : null}
                     </div>

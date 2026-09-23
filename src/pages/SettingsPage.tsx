@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { CheckCircle2, Database, RotateCcw, ShieldCheck } from 'lucide-react'
+import { CheckCircle2, Database, RotateCcw, ShieldCheck, SlidersHorizontal } from 'lucide-react'
 import { PageHeader } from '../components/PageHeader'
 import { Button } from '../components/ui/button'
 import { Card } from '../components/ui/card'
@@ -8,6 +8,10 @@ import { Input } from '../components/ui/input'
 import { Select } from '../components/ui/select'
 import { useAppData } from '../hooks/useAppData'
 import { getScraperStatus } from '../services/leadSearchService'
+
+function Label({ children }: { children: React.ReactNode }) {
+  return <span className="mb-2 block text-[9px] font-semibold uppercase tracking-[.14em] text-zinc-600">{children}</span>
+}
 
 export function SettingsPage() {
   const { settings, setSettings, resetLeads } = useAppData()
@@ -21,81 +25,99 @@ export function SettingsPage() {
   return (
     <>
       <PageHeader
-        eyebrow="Workspace"
+        eyebrow="Sistema"
         title="Configurações"
-        subtitle="Defina os padrões da sua operação e escolha a fonte usada no Radar de leads."
+        subtitle="Padrões de operação, preferências do workspace e status das integrações."
       />
 
-      <div className="grid gap-3 xl:grid-cols-[1fr_.72fr]">
+      <div className="grid gap-4 xl:grid-cols-[1.05fr_.72fr]">
         <Card>
-          <div className="mb-5">
-            <p className="text-[15px] font-semibold text-white">Preferências gerais</p>
-            <p className="mt-1 text-xs text-zinc-500">Esses valores são usados como padrão em novas oportunidades.</p>
+          <div className="mb-6 flex items-start gap-3">
+            <span className="grid size-9 place-items-center rounded-xl border border-white/[0.07] bg-white/[0.035] text-zinc-500">
+              <SlidersHorizontal className="size-4" />
+            </span>
+            <div>
+              <p className="text-sm font-semibold text-white">Preferências da operação</p>
+              <p className="mt-1 text-[11px] text-zinc-600">Defina os valores usados por padrão em novas oportunidades.</p>
+            </div>
           </div>
+
           <div className="grid gap-4 md:grid-cols-2">
             <label>
-              <span className="mb-2 block text-[10px] font-semibold uppercase tracking-[.14em] text-zinc-600">Workspace</span>
-              <Input value={draft.workspaceName} onChange={(e) => setDraft((value) => ({ ...value, workspaceName: e.target.value }))} />
+              <Label>Workspace</Label>
+              <Input value={draft.workspaceName} onChange={(event) => setDraft((value) => ({ ...value, workspaceName: event.target.value }))} />
             </label>
             <label>
-              <span className="mb-2 block text-[10px] font-semibold uppercase tracking-[.14em] text-zinc-600">Moeda</span>
-              <Select value={draft.currency} onChange={(e) => setDraft((value) => ({ ...value, currency: e.target.value as 'BRL' }))}>
+              <Label>Moeda</Label>
+              <Select value={draft.currency} onChange={(event) => setDraft((value) => ({ ...value, currency: event.target.value as 'BRL' }))}>
                 <option value="BRL">BRL · Real brasileiro</option>
               </Select>
             </label>
             <label>
-              <span className="mb-2 block text-[10px] font-semibold uppercase tracking-[.14em] text-zinc-600">Valor potencial padrão</span>
-              <Input type="number" min={0} value={draft.defaultPotentialValue} onChange={(e) => setDraft((value) => ({ ...value, defaultPotentialValue: Number(e.target.value) }))} />
+              <Label>Valor potencial padrão</Label>
+              <Input type="number" min={0} value={draft.defaultPotentialValue} onChange={(event) => setDraft((value) => ({ ...value, defaultPotentialValue: Number(event.target.value) }))} />
             </label>
             <label>
-              <span className="mb-2 block text-[10px] font-semibold uppercase tracking-[.14em] text-zinc-600">Resultados por busca</span>
-              <Input type="number" min={1} max={20} value={Math.min(draft.defaultResultLimit, 20)} onChange={(e) => setDraft((value) => ({ ...value, defaultResultLimit: Math.min(20, Math.max(1, Number(e.target.value) || 1)) }))} />
+              <Label>Resultados por busca</Label>
+              <Input type="number" min={1} max={20} value={Math.min(draft.defaultResultLimit, 20)} onChange={(event) => setDraft((value) => ({ ...value, defaultResultLimit: Math.min(20, Math.max(1, Number(event.target.value) || 1)) }))} />
             </label>
           </div>
 
-          <label className="mt-4 flex items-center justify-between gap-4 rounded-2xl border border-white/[0.06] bg-white/[0.025] p-4">
+          <label className="mt-5 flex items-center justify-between gap-4 rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
             <div>
-              <p className="text-xs font-medium text-zinc-300">Modo compacto</p>
-              <p className="mt-1 text-[11px] text-zinc-600">Reduz espaçamentos para exibir mais dados na tela.</p>
+              <p className="text-[12px] font-semibold text-zinc-300">Modo compacto</p>
+              <p className="mt-1 text-[10px] leading-5 text-zinc-600">Reduz espaçamentos para mostrar mais informação em telas menores.</p>
             </div>
-            <Checkbox checked={draft.compactMode} onChange={(e) => setDraft((value) => ({ ...value, compactMode: e.target.checked }))} />
+            <Checkbox checked={draft.compactMode} onChange={(event) => setDraft((value) => ({ ...value, compactMode: event.target.checked }))} />
           </label>
 
-          <div className="mt-5 flex flex-wrap gap-2">
-            <Button onClick={() => setSettings(draft)}><CheckCircle2 className="size-4" />Salvar configurações</Button>
-            <Button variant="outline" onClick={() => { if (confirm('Limpar todos os leads salvos?')) resetLeads() }}><RotateCcw className="size-4" />Limpar base de leads</Button>
+          <div className="mt-6 flex flex-wrap gap-2 border-t border-white/[0.05] pt-5">
+            <Button onClick={() => setSettings(draft)}>
+              <CheckCircle2 className="size-4" />
+              Salvar configurações
+            </Button>
+            <Button variant="outline" onClick={() => { if (confirm('Limpar todos os leads salvos?')) resetLeads() }}>
+              <RotateCcw className="size-4" />
+              Limpar base de leads
+            </Button>
           </div>
         </Card>
 
-        <div className="space-y-3">
+        <div className="space-y-4">
           <Card>
             <div className="flex items-start gap-3">
-              <div className="grid size-10 place-items-center rounded-2xl border border-[#ff2438]/20 bg-[#ff2438]/10">
-                <Database className="size-4.5 text-[#ff5668]" />
-              </div>
+              <span className="grid size-9 place-items-center rounded-xl border border-[#ff304d]/20 bg-[#ff304d]/[0.08] text-[#ff6378]">
+                <Database className="size-4" />
+              </span>
               <div>
-                <p className="text-[15px] font-semibold text-white">Fonte de dados</p>
-                <p className="mt-1 text-xs leading-5 text-zinc-500">O Radar consulta exclusivamente dados reais extraídos do Google Maps pelo scraper.</p>
+                <p className="text-sm font-semibold text-white">Fonte de dados</p>
+                <p className="mt-1 text-[11px] leading-5 text-zinc-600">O Radar usa dados extraídos do Google Maps pelo serviço de scraper.</p>
               </div>
             </div>
 
-            <div className="mt-4 flex items-center justify-between rounded-2xl border border-white/[0.06] bg-[#0d0e11] p-3.5">
+            <div className="mt-5 flex items-center justify-between rounded-xl border border-white/[0.06] bg-[#090c11] p-3.5">
               <div>
-                <p className="text-xs font-medium text-zinc-300">Google Maps Scraper</p>
-                <p className="mt-1 text-[11px] text-zinc-600">
-                  {googleReady === null ? 'Verificando...' : googleReady ? 'Configurada no servidor' : 'Não configurada — pesquisas bloqueadas'}
+                <p className="text-[11px] font-semibold text-zinc-300">Google Maps Scraper</p>
+                <p className="mt-1 text-[9px] text-zinc-600">
+                  {googleReady === null ? 'Verificando integração...' : googleReady ? 'Conectado e operacional' : 'Não configurado'}
                 </p>
               </div>
-              <span className={`size-2.5 rounded-full ${googleReady ? 'bg-emerald-400 shadow-[0_0_14px_rgba(52,211,153,.45)]' : 'bg-red-400'}`} />
+              <span className={`size-2.5 rounded-full ${googleReady ? 'bg-emerald-400 shadow-[0_0_14px_rgba(52,211,153,.35)]' : 'bg-red-400'}`} />
             </div>
           </Card>
 
-          <Card className="border-emerald-400/10">
+          <Card>
             <div className="flex gap-3">
               <ShieldCheck className="mt-0.5 size-5 shrink-0 text-emerald-400" />
               <div>
-                <p className="text-xs font-medium text-zinc-300">Chave protegida</p>
-                <p className="mt-1 text-[11px] leading-5 text-zinc-600">As credenciais do scraper nunca ficam no navegador. A Vercel usa apenas <code className="text-zinc-400">GMAPS_SCRAPER_URL</code> e <code className="text-zinc-400">GMAPS_SCRAPER_API_KEY</code> no servidor.</p>
+                <p className="text-[11px] font-semibold text-zinc-300">Credenciais protegidas</p>
+                <p className="mt-1 text-[10px] leading-5 text-zinc-600">
+                  As credenciais ficam no ambiente server-side da Vercel e não são expostas no navegador.
+                </p>
+                <div className="mt-3 space-y-1.5 font-mono text-[9px] text-zinc-600">
+                  <p>GMAPS_SCRAPER_URL</p>
+                  <p>GMAPS_SCRAPER_API_KEY</p>
+                </div>
               </div>
             </div>
           </Card>

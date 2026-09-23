@@ -3,14 +3,14 @@ import type { ButtonHTMLAttributes } from 'react'
 import { cn } from '../../lib/utils'
 
 const buttonVariants = cva(
-  'inline-flex h-10 items-center justify-center gap-2 rounded-xl px-4 text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ff2438]/45 disabled:pointer-events-none disabled:opacity-45 active:scale-[0.985]',
+  'inline-flex h-10 items-center justify-center gap-2 rounded-xl px-4 text-[13px] font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ff304d]/45 focus-visible:ring-offset-2 focus-visible:ring-offset-[#090b10] disabled:pointer-events-none disabled:opacity-45 active:translate-y-px',
   {
     variants: {
       variant: {
-        default: 'bg-[#ff2438] text-white shadow-[0_8px_24px_rgba(255,36,56,.18)] hover:bg-[#e81f34] hover:shadow-[0_10px_28px_rgba(255,36,56,.24)]',
-        ghost: 'bg-transparent text-zinc-300 hover:bg-white/[0.055] hover:text-white',
-        secondary: 'border border-white/[0.07] bg-white/[0.055] text-zinc-100 hover:border-white/[0.12] hover:bg-white/[0.085]',
-        outline: 'border border-white/[0.10] bg-transparent text-zinc-200 hover:border-[#ff2438]/30 hover:bg-[#ff2438]/[0.06] hover:text-white',
+        default: 'border border-[#ff304d] bg-[#ff304d] text-white shadow-[0_8px_26px_rgba(255,48,77,.16)] hover:border-[#ff4a63] hover:bg-[#ff3c57] hover:shadow-[0_10px_32px_rgba(255,48,77,.22)]',
+        ghost: 'border border-transparent bg-transparent text-zinc-400 hover:bg-white/[0.045] hover:text-white',
+        secondary: 'border border-white/[0.08] bg-white/[0.045] text-zinc-100 shadow-[inset_0_1px_0_rgba(255,255,255,.025)] hover:border-white/[0.13] hover:bg-white/[0.07]',
+        outline: 'border border-white/[0.10] bg-[#0b0e13]/75 text-zinc-200 hover:border-[#ff304d]/32 hover:bg-[#ff304d]/[0.055] hover:text-white',
       },
     },
     defaultVariants: { variant: 'default' },
